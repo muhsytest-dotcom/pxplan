@@ -166,6 +166,33 @@ Frontend:
 - Pagination and SSE integration verified.
 - Frontend typecheck, lint, i18n check, and production build passed.
 
+## Completed Slice 8: Blocker Cleanup and Full Quality Gate Refresh
+
+Status: Complete on 2026-05-16
+
+This pass re-read the implementation guides, verified that the three BLOCKER tracks were present in the codebase, and tightened the remaining rough edges around i18n envelopes, translation coverage, lint warnings, and validation.
+
+Backend:
+- Added reusable catalog HTTP error detail helpers in `PX-B/app/modules/catalog/router.py` so catalog routes can consistently return `message`, `i18n_key`, and optional interpolation `context`.
+- Updated variant job create/rebuild/active/detail/cancel/SSE route not-found responses to include catalog i18n keys.
+- Updated the product structure guard HTTP conflict response to include `catalog.variant.errors.structure_stale_hash` and context.
+- Added a backend regression test asserting that variant job creation for a missing product returns `error.i18n_key = catalog.product.errors.not_found`.
+
+Frontend:
+- Completed French and German catalog variant error translations in `PX-F/px/lib/catalog/i18n.ts`.
+- Updated the catalog i18n regression test to assert locale-specific French translation behavior.
+- Removed unused destructured values from `VariantStructureStudio` and cleaned the active-job effect dependency expression in `AdminProductEditForm`, eliminating lint warnings without changing behavior.
+
+Verification completed:
+- Backend full tests: passed with `.venv/bin/python -m pytest tests/ -q`.
+- Backend lint: passed with `.venv/bin/ruff check .`.
+- Backend typecheck: passed with `.venv/bin/mypy app/`.
+- Frontend full tests: `293 passed` with `npm test`.
+- Frontend lint: passed with `npm run lint`.
+- Frontend typecheck: passed with `npm run typecheck`.
+- Frontend i18n check: passed for 10 locales with `npm run i18n:check`.
+- Frontend production build: passed with `npm run build` after allowing the build to fetch required Google font assets.
+
 ## Still Not Complete
 
 The full multi-phase plan is not finished yet. Remaining major areas:
