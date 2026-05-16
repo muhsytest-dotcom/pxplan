@@ -121,10 +121,37 @@ Backend:
 - **Storefront Authoritative Structure**: Added a storefront structure resolution service that prioritizes published snapshots for consistent UI rendering.
 - **Administrative API**: Added endpoints to list snapshots and manage publication status.
 
+## Completed Slice 7: i18n Framework, Error Classification, and Worker Retry
+
+Implemented the three BLOCKER items from the implementation guides while preserving the existing worker, snapshot, SSE, and custom frontend i18n architecture.
+
+Backend:
+- Added `app/core/i18n_keys.py` as the central catalog variant/product i18n key registry.
+- Extended `AppException` and HTTP exception handling so API error envelopes can carry `error.i18n_key` and interpolation `context`.
+- Added `app/modules/catalog/job_errors.py` with `JobErrorType`, retryable/non-retryable classification sets, concrete job error classes, and `wrap_error()`.
+- Added `error_type`, `retry_count`, `last_error_at`, and `last_error_message` to `CatalogVariantJob`, plus Alembic migration `b8f7a2c9d401_add_variant_job_error_classification.py`.
+- Updated job execution to classify validation, stale-structure, cancellation, timeout, database, and unknown failures; failed job events now expose the stored `error_type`.
+- Implemented worker retry with bounded backoff for retryable `JobError`s and immediate terminal handling for validation/conflict/cancelled failures.
+- Fixed snapshot job creation by capturing a durable structure snapshot before queuing a job.
+- Restored compatibility routes and test hooks for existing `generate-missing` job endpoints and event bus publishing.
+
+Frontend:
+- Added `lib/catalog/i18n.ts` with catalog error-key translation and interpolation support that works with the existing locale/path i18n system.
+- Updated API error adapters and shared auth error typing to preserve backend i18n metadata.
+- Added frontend tests for catalog i18n-key translation and fallback behavior.
+- Kept `VariantStructureStudio` compatible with both context-provider usage and the established props-based tests/call sites.
+- Improved active job recovery polling so fallback polling checks the current job immediately before starting the interval.
+
+Tests and validation:
+- Added backend tests in `tests/test_job_error_classification.py` for retryability, concrete job errors, wrapping, and worker retry behavior.
+- Updated existing backend variant job tests for the decoupled worker boundary and readiness checks.
+- Updated frontend API and variant studio tests to match current contracts.
+- Verified full backend tests, full frontend tests, backend ruff, backend mypy, frontend lint, frontend typecheck, frontend i18n check, and frontend production build.
+
 ## Verification Completed
 
 Backend:
-- Full backend tests: `214 passed`
+- Full backend tests: passed
 - Variant/snapshot regression suite: `43 passed`
 - Domain protection/quota tests: `15 passed`
 - Job operation tests (cancellation/timeout): Added `tests/test_catalog_variant_ops.py`
@@ -134,9 +161,10 @@ Backend:
 - Full backend ruff/mypy: passed
 
 Frontend:
-- Full frontend tests: `291 passed`
+- Full frontend tests: `293 passed`
 - Context architecture verified: Successful refactor of `VariantStructureStudio` without regressions.
 - Pagination and SSE integration verified.
+- Frontend typecheck, lint, i18n check, and production build passed.
 
 ## Still Not Complete
 
