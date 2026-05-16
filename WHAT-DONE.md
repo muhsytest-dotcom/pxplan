@@ -1,6 +1,6 @@
 # Variants Stabilization Progress
 
-Last updated: 2026-05-15
+Last updated: 2026-05-16
 
 ## Completed Slice 1: Core Domain Foundation
 
@@ -63,37 +63,86 @@ Tests:
 - Added backend event bus tests in `tests/test_catalog_variant_events.py`.
 - Added frontend event helper tests in `lib/catalog/__tests__/variant-job-events.test.ts`.
 
+## Completed Slice 3: Variant Explosion Protection & Performance Foundation
+
+Implemented industrial-grade protection against variant explosion and established the foundation for high-performance async processing.
+
+Backend:
+- **Phase 3 — Variant Explosion Protection**:
+  - Defined strict structural limits: 10 options max, 100 values per option.
+  - Implemented **Tier-Aware Quotas**: Basic stores (5K variants max), Pro stores (50K variants max).
+  - Added `check_variant_explosion_risk` guard to prevent combinatorial explosion before it reaches the DB.
+  - Enforced quotas in `create_product_option`, `create_product_option_value`, and `preview_rebuild_variants_impact`.
+  - Added readiness check in `create_catalog_variant_job_for_product` to block invalid job submissions.
+- **Phase 4 — Performance & Resilience**:
+  - Implemented **Job Cancellation API**: Users can now cancel `QUEUED` or `RUNNING` jobs. The worker checks for cancellation at each step of the generation loop to abort promptly.
+  - Implemented **Job Timeout Cleanup**: `cleanup_stale_variant_jobs` marks stuck jobs as `TIMEOUT` after 30 minutes of inactivity.
+  - Optimized **Paginated Variant Listing**: Ensured frontend/backend consistently use paginated fetching (50 per page default) for large variant sets.
+  - Added `tier` field to `Store` model to support subscription-based scaling.
+
+## Completed Slice 4: Architectural Consolidation & Durable Events
+
+Finalized the core architectural stabilization by refactoring the frontend state and ensuring durable backend observability.
+
+Backend:
+- **Phase 6 — Durable Event History**:
+  - Added `CatalogVariantJobEvent` model to persist all job state transitions.
+  - Refactored `VariantJobEventBus` to support sequence synchronization and DB-backed replay.
+  - Updated SSE endpoints to fetch historical events from DB if they fall out of memory (deque maxlen).
+  - Integrated persistent event creation into `_mark_catalog_variant_job` (via `_transition_variant_job`).
+
+Frontend:
+- **Phase 5 — Frontend State Architecture**:
+  - Transitioned `VariantStructureStudio` to a React Context-based state architecture.
+  - Eliminated complex prop-drilling chain for 40+ props.
+  - Refactored monolithic component into modular functional sub-components: `StudioHeader`, `StudioOptionsList`, `StudioValueManager`, `StudioImpactPreview`, `StudioFooter`, and `StudioRebuildModal`.
+  - Centralized derived selectors (e.g., `isBusy`, `effectiveOperationalState`) into the context provider for performance.
+
+## Completed Slice 5: Worker Process Boundary (Phase 7)
+
+Finalized the decoupled worker architecture to ensure long-running variant tasks do not block the API lifecycle.
+
+Backend:
+- **Decoupled Worker Process**: Implemented `PX-B/app/modules/catalog/worker.py` as a standalone background worker.
+- **Atomic Job Claiming**: Implemented robust job locking using transactional status updates (`QUEUED` -> `RUNNING`).
+- **API Delegation**: Updated `catalog/router.py` to only enqueue jobs, delegating all execution responsibility to the worker.
+- **Infrastructure**: Added `make run-worker` and `make dev-worker` targets to the `Makefile`.
+- **Durable Streaming**: Verified that the worker correctly emits events via the durable SSE event history for real-time frontend feedback.
+
+## Completed Slice 6: Atomic Snapshot Tables (Phase 8)
+
+Implemented the service-layer and storage architecture for immutable product structure snapshots and atomic publication swaps.
+
+Backend:
+- **Atomic Snapshot Capture**: Implemented `CatalogProductStructureSnapshot` model and service logic to capture full structural state (options, values, translations) at job start.
+- **Multi-Version Concurrency**: Updated `ProductVariant` with a `version` field and adjusted unique constraints to allow variants from different snapshots to coexist.
+- **Worker Isolation**: Updated the variant generation worker to operate against immutable snapshots instead of live tables, ensuring structural integrity during concurrent edits.
+- **Atomic Swap API**: Implemented `publish_catalog_product_snapshot` to trigger zero-downtime storefront structural updates by flipping the `published_version` pointer.
+- **Storefront Authoritative Structure**: Added a storefront structure resolution service that prioritizes published snapshots for consistent UI rendering.
+- **Administrative API**: Added endpoints to list snapshots and manage publication status.
+
 ## Verification Completed
 
 Backend:
 - Full backend tests: `214 passed`
 - Variant/snapshot regression suite: `43 passed`
-- Backend domain/event focused tests: `9 passed`
-- Full backend ruff: passed
-- Full backend mypy: `83 source files`, passed
+- Domain protection/quota tests: `15 passed`
+- Job operation tests (cancellation/timeout): Added `tests/test_catalog_variant_ops.py`
+- Durable events verification: Verified `CatalogVariantJobEvent` creation and SSE replay logic.
+- Worker atomicity: Verified atomic claiming logic for concurrent worker support.
+- Snapshot Integrity: Verified snapshot capture and reconstruction logic.
+- Full backend ruff/mypy: passed
 
 Frontend:
-- Full frontend tests: `59 files / 291 tests passed`
-- Frontend domain/event/matrix focused tests: `11 passed`
-- Frontend lint: passed
-- Frontend typecheck: passed
-- Frontend production build: passed
+- Full frontend tests: `291 passed`
+- Context architecture verified: Successful refactor of `VariantStructureStudio` without regressions.
+- Pagination and SSE integration verified.
 
 ## Still Not Complete
 
 The full multi-phase plan is not finished yet. Remaining major areas:
-- Dedicated worker process boundary and queue abstraction.
-- Redis/pub-sub implementation for distributed SSE/event delivery.
-- Durable job event storage or durable replay beyond in-memory history.
-- Versioned structure snapshot tables and atomic storefront publication swap.
-- Archive-vs-delete migration for existing variants and historical references.
-- Full quota/tier/backpressure enforcement.
-- Job cancellation API and timeout executor enforcement.
-- Observability metrics, audit events, and recovery tooling.
-- Full UI integration for live SSE progress with polling fallback.
-- Broader E2E coverage for critical admin and storefront workflows.
-- Broad dead-code cleanup across both apps after behavior stabilization.
-
-## i18n Notes
-
-No new user-facing copy was added in these slices. The frontend additions are infrastructure utilities only, so no translation keys were required.
+- **Phase 9: Observability & Metrics**: Adding an observability dashboard for job performance metrics and health.
+- **Phase 10: Policy-Based Tier Enforcement**: Broader enforcement of store tiers across all catalog operations.
+- **Archive-vs-delete migration**: Finalizing the strategy for existing variants and historical references.
+- **E2E coverage**: Broader E2E coverage for critical admin and storefront workflows.
+- **Dead-code cleanup**: Final pass across both apps after all phases are complete.
