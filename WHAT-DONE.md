@@ -285,6 +285,36 @@ Verification completed:
 - Frontend typecheck: `npm run typecheck` passed.
 - Frontend i18n check: `npm run i18n:check` passed for 10 locales.
 
+## Completed Slice 12: Batched Variant Selection Resolution
+
+Status: Complete on 2026-05-17
+
+Addressed the high-priority N+1 query risk in variant listing paths by batching selection resolution for admin and storefront variant responses.
+
+Backend:
+- Added `resolve_variant_selections_for_variants` in `PX-B/app/modules/catalog/service.py`.
+- Batched variant value links, option values, options, option translations, and option value translations for a page of variants.
+- Kept `resolve_variant_selections_for_variant` as the single-variant compatibility wrapper.
+- Updated admin variant listing in `PX-B/app/modules/catalog/router.py` to resolve all displayed variant selections in one batched service call.
+- Updated storefront variant listing to use the same batched resolver while preserving requested-locale translation behavior.
+
+Tests:
+- Added `PX-B/tests/test_catalog_variant_query_efficiency.py`.
+- Covered a four-variant admin listing and asserted the catalog selection path stays bounded rather than growing per variant.
+- Re-ran existing storefront variant tests covering store scoping, active-only filtering, and localized option/value display.
+
+Verification completed:
+- Backend focused tests: `python -m pytest tests/test_catalog_variant_query_efficiency.py tests/test_catalog_variants.py::test_storefront_variants_are_store_scoped_and_active_only tests/test_catalog_variants.py::test_option_translations_and_visual_value_metadata_are_exposed -q` passed.
+- Backend full tests: `python -m pytest tests -q` passed.
+- Backend lint: `.\.venv\bin\ruff check .` passed.
+- Backend typecheck: `python -m mypy app` passed.
+- Frontend focused tests: `npm test -- lib/catalog/__tests__/variant-job-events.test.ts app/components/product-editor/__tests__/product-variants-section.test.tsx app/components/__tests__/admin-product-edit-form.test.tsx` passed (`38 passed`).
+- Frontend full tests: `npm test` passed (`301 passed`).
+- Frontend lint: `npm run lint` passed.
+- Frontend typecheck: `npm run typecheck` passed.
+- Frontend i18n check: `npm run i18n:check` passed for 10 locales.
+- Frontend production build: `npm run build` passed.
+
 ## Still Not Complete
 
 The full multi-phase plan is not finished yet. Remaining major areas:
