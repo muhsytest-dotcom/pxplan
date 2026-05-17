@@ -315,11 +315,44 @@ Verification completed:
 - Frontend i18n check: `npm run i18n:check` passed for 10 locales.
 - Frontend production build: `npm run build` passed.
 
+## Completed Slice 13: Policy-Based Tier Enforcement for Variant Structure Writes
+
+Status: Complete on 2026-05-17
+
+Closed the remaining tier-policy gap where public structure edits could create over-quota option/value matrices that only failed later during rebuild preview or job creation.
+
+Backend:
+- Added `ProductVariantTierQuotaExceededError` with `catalog.variant.errors.tier_quota_exceeded` metadata and interpolation context.
+- Added shared projected-count and target-store tier quota helpers in `PX-B/app/modules/catalog/service.py`.
+- Enforced Basic/Pro projected variant limits when adding option values.
+- Enforced the target store tier when applying variant templates.
+- Enforced the target store tier when copying product structures.
+- Kept rebuild-impact and job-submission quota protection for legacy/imported over-quota structures.
+- Updated the option-value API path to return structured bad-request responses for value-count validation instead of leaking service `ValueError`s.
+
+Tests:
+- Added `PX-B/tests/test_catalog_tier_policy.py`.
+- Covered Basic-tier blocking for projected option-value growth beyond 5,000 variants.
+- Covered Pro-tier allowance for the same projected structure.
+- Covered template application and structure copy using the target store tier limit.
+- Updated the existing rebuild-impact quota regression to seed legacy/imported over-quota data directly, since public structure writes now block that state earlier.
+
+Verification completed:
+- Backend focused tests: `python -m pytest tests/test_catalog_tier_policy.py tests/test_catalog_variant_ops.py::test_rebuild_impact_enforces_variant_quota -q` passed.
+- Backend full tests: `python -m pytest tests -q` passed.
+- Backend lint: `.\.venv\bin\ruff check .` passed.
+- Backend typecheck: `python -m mypy app` passed.
+- Frontend full tests: `npm test` passed (`301 passed`).
+- Frontend lint: `npm run lint` passed.
+- Frontend typecheck: `npm run typecheck` passed.
+- Frontend i18n check: `npm run i18n:check` passed for 10 locales.
+- Frontend production build: `npm run build` passed.
+
 ## Still Not Complete
 
 The full multi-phase plan is not finished yet. Remaining major areas:
 - **Phase 9: Observability & Metrics**: Deeper health views and alert policy surfaces can be added later, but core backend metrics and dashboard visibility are now complete.
-- **Phase 10: Policy-Based Tier Enforcement**: Broader enforcement of store tiers across all catalog operations.
+- **Policy-Based Tier Enforcement**: Variant structure write enforcement is now complete; any future non-variant catalog tier features should follow the same target-store policy pattern.
 - **Archive-vs-delete migration**: Finalizing the strategy for existing variants and historical references.
 - **E2E coverage**: Broader E2E coverage for critical admin and storefront workflows.
 - **Dead-code cleanup**: Final pass across both apps after all phases are complete.
