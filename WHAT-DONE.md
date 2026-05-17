@@ -417,6 +417,56 @@ Verification completed:
 - Frontend i18n check: `npm run i18n:check` passed for 10 locales.
 - Frontend production build: `npm run build` passed.
 
+## Completed Slice 16: Frontend Snapshot Publication Workflow
+
+Status: Complete on 2026-05-17
+
+Wired the existing backend snapshot publication endpoints into the admin product variant workflow so generated snapshots can be explicitly published to the storefront from the frontend.
+
+Frontend:
+- Added `CatalogProductStructureSnapshotRead`, `ProductRead.snapshot_version`, `ProductRead.published_version`, and optional `CatalogVariantJobRead.snapshot_id` to `PX-F/lib/catalog/types.ts`.
+- Added `listProductStructureSnapshots` and `publishProductStructureSnapshot` to `PX-F/lib/catalog/api.ts`.
+- Updated `PX-F/app/components/admin-product-edit-form.tsx` to load product structure snapshots, track the published version, detect the latest unpublished generated snapshot, and publish it through the existing backend API.
+- Refreshed authoritative snapshot, media state, and snapshot list after successful publication.
+- Updated `PX-F/app/components/product-editor/product-variants-section.tsx` with a translatable publish-ready panel that appears only when the latest generated snapshot version is newer than the storefront published version.
+- Added catalog admin copy keys for the snapshot publish panel and success/failure messages; existing locale fallback behavior remains unchanged and `npm run i18n:check` passes for 10 locales.
+
+Backend:
+- No runtime backend snapshot behavior was changed.
+- Cleaned the variant metrics route signature from `store_id: UUID | None = Query(default=None)` to `Annotated[UUID | None, Query()] = None` so backend Ruff passes under the WSL venv.
+- Let Ruff fix backend import/unused-import style issues in touched test/support files.
+
+Tests:
+- Extended `PX-F/lib/catalog/__tests__/api.test.ts` to cover the snapshot list and publish admin routes.
+- Extended `PX-F/app/components/product-editor/__tests__/product-variants-section.test.tsx` to cover the publish-ready UI action.
+- Extended `PX-F/app/components/__tests__/admin-product-edit-form.test.tsx` to cover publishing the latest generated snapshot from the variants section.
+
+Important reasoning:
+- Snapshot generation still does not auto-publish. The UI only exposes the existing explicit publication contract.
+- The publish action is version-driven: it appears only when `latestSnapshot.version > product.published_version`.
+- The storefront boundary remains owned by `product.published_version`; draft structure edits remain separate until publication.
+- Archive-vs-delete semantics were intentionally left unchanged.
+
+API, database, and schema changes:
+- Frontend API client now supports existing backend endpoints:
+  - `GET /catalog/admin/products/{product_id}/snapshots`
+  - `POST /catalog/admin/products/{product_id}/snapshots/{snapshot_id}/publish`
+- No backend API path changes.
+- No database migration.
+- No backend schema change.
+
+Verification completed:
+- Frontend focused tests: `npm test -- lib/catalog/__tests__/api.test.ts app/components/product-editor/__tests__/product-variants-section.test.tsx app/components/__tests__/admin-product-edit-form.test.tsx` passed (`61 passed`).
+- Frontend full tests: `npm test` passed (`303 passed`).
+- Frontend lint: `npm run lint` passed.
+- Frontend typecheck: `npm run typecheck` passed.
+- Frontend i18n check: `npm run i18n:check` passed for 10 locales.
+- Frontend production build: `npm run build` passed.
+- Backend lint via WSL venv: `wsl bash -lc "cd /mnt/d/Github/muhsinmuhsy/PX/PX-B && .venv/bin/ruff check ."` passed.
+- Backend typecheck via WSL venv: `wsl bash -lc "cd /mnt/d/Github/muhsinmuhsy/PX/PX-B && .venv/bin/python -m mypy app"` passed.
+- Backend focused store-domain regression check: `wsl bash -lc "cd /mnt/d/Github/muhsinmuhsy/PX/PX-B && .venv/bin/python -m pytest tests/test_store_domains.py -q"` passed.
+- Backend full test note: first WSL full-suite run completed with one unrelated failure in `tests/test_store_domains.py::test_invalid_domain_returns_field_error` (`401` instead of expected `400`), while the isolated test and module both passed. A second full-suite run timed out before completion. Treat this as existing cross-test/order sensitivity to investigate separately; no backend runtime logic was changed by this slice.
+
 ## Still Not Complete
 
 The full multi-phase plan is not finished yet. Remaining major areas:
