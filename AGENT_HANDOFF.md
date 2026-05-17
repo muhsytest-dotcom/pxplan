@@ -6,7 +6,7 @@ Read this first, then `00_START_HERE.md`, `WHAT-DONE.md`, and the architecture d
 
 ## Latest Implementation Status
 
-The variants stabilization work is largely complete through Slice 14.
+The variants stabilization work is largely complete through Slice 15.
 
 Completed:
 - Core variant domain foundation and canonical identity.
@@ -20,6 +20,7 @@ Completed:
 - Batched variant selection resolution for admin/storefront listing.
 - Policy-based target-store tier enforcement for option-value growth, template application, and structure copy.
 - API-level regression coverage for published snapshot storefront visibility while draft structure changes continue.
+- API-level regression coverage for template quota failures and rebuild media rebinding.
 
 Current quality gate from the latest slice:
 - Backend full tests: `python -m pytest tests -q` passed.
@@ -33,32 +34,33 @@ Current quality gate from the latest slice:
 
 ## Summary of Latest Completed Work
 
-Slice 14 added release-hardening coverage for the published snapshot boundary:
-- Added `test_published_snapshot_controls_storefront_while_draft_structure_changes` in `PX-B/tests/test_catalog_variants.py`.
-- Exercised generate-missing job creation through the admin API and direct worker execution through `execute_catalog_variant_job`.
-- Verified storefront variants remain empty until the generated snapshot is explicitly published.
-- Verified the published snapshot exposes the expected storefront variant and selection data.
-- Verified later draft option/value edits do not leak into storefront structure or variants while `published_version` remains pinned.
-- No API, database, schema, or runtime behavior changes were made.
+Slice 15 added release-hardening API regressions for two remaining critical workflows:
+- Added `test_template_apply_api_returns_i18n_quota_error_for_basic_store` in `PX-B/tests/test_catalog_tier_policy.py`.
+- Verified oversized store-scoped template application returns `PRODUCT_VARIANT_TIER_QUOTA_EXCEEDED` with `catalog.variant.errors.tier_quota_exceeded` and `{ tier, limit, projected }` context.
+- Added `test_rebuild_variants_marks_detached_media_for_rebinding` in `PX-B/tests/test_catalog_variants.py`.
+- Verified rebuild impact reports media detachment and rebuild marks detached media with `needs_variant_rebinding = true`.
+- No runtime behavior, API path, database, or schema changes were made.
 
 ## Current Architecture Decisions
 
 - **Published snapshot owns storefront structure**: Once `product.published_version` is set, storefront structure reads must resolve from the matching immutable `CatalogProductStructureSnapshot`, not live draft options.
 - **Published version owns storefront variants**: Storefront variant listing must remain scoped to variants generated for `product.published_version` and must not expose newer draft structures before publication.
 - **Target-store policy wins**: Template application and structure copy must enforce the destination product/store tier, not the source/template origin.
+- **Quota errors stay translatable at API boundaries**: Template quota failures must preserve the `AppException` envelope with `error.i18n_key` and interpolation `context`.
+- **Rebuild media rebinding remains visible**: Full rebuilds that remove old variants must detach affected media and mark it for rebinding so admins can reconnect media to generated variants.
 - **Block invalid structures early**: Public structure writes should refuse projected over-quota matrices before the user reaches rebuild/job execution.
 - **Keep legacy safeguards**: Rebuild preview and job creation must still detect over-quota data that may come from migrations, imports, or older records.
 - **Error envelopes stay i18n-compatible**: New user-facing policy failures should include `error.i18n_key` and `error.context`.
 
 ## Important Reasoning Behind Changes
 
-Slice 14 was test-focused because the implementation already had immutable snapshots and publication swaps, but future changes could accidentally read live draft structure from storefront paths. The new regression preserves the publication boundary without touching the unresolved archive-vs-delete semantics.
+Slice 15 was test-focused because the underlying policy and rebinding behavior already existed, but the API contracts needed explicit coverage. It intentionally avoided archive-vs-delete implementation because that remains a higher-risk product/domain decision involving historical references and database constraints.
 
 ## Pending Tasks
 
 Still pending from the broader plan:
 - Final archive-vs-delete migration strategy for variants and historical references.
-- Broader E2E coverage for critical admin and storefront flows. Published snapshot storefront visibility now has API-level regression coverage; template quota failure, media rebinding after rebuild, and full browser-level flows still need coverage.
+- Broader E2E coverage for critical admin and storefront flows. Published snapshot visibility, template quota failure, and media rebinding after rebuild now have API-level regression coverage; full browser-level flows still need coverage.
 - Final dead-code cleanup after remaining design decisions settle.
 - Optional deeper observability: alert policy surfaces, health views, reconnect metrics, and operational drilldowns.
 - Keep planning docs aligned when future slices land.
@@ -104,7 +106,7 @@ Latest slice:
 - No database migration.
 - No public API path changes.
 - No schema changes.
-- Test-only coverage added for existing snapshot publication and storefront reads.
+- Test-only coverage added for existing template quota API failures and rebuild media rebinding.
 
 Earlier completed work added job error tracking fields, durable variant job events, snapshots, metrics response types, and rate-limit policies. See `WHAT-DONE.md` for slice-by-slice details.
 
@@ -128,10 +130,7 @@ The project should now move from stabilization into release hardening:
 
 1. Keep plan/checklist docs current when Slices 15+ land.
 2. Plan the archive-vs-delete migration carefully before touching variant deletion semantics.
-3. Add remaining E2E coverage for:
-   - Template apply and quota failure.
-   - Media rebinding after rebuild.
-   - Full browser-level admin setup/generate/publish/storefront visibility.
+3. Add remaining browser-level E2E coverage for full admin setup/generate/publish/storefront visibility.
 4. Run the full quality gate after every implementation slice.
 
 ## Things Future Agents Should Avoid Breaking
@@ -141,6 +140,8 @@ The project should now move from stabilization into release hardening:
 - Do not hard-delete variants that may have historical references without the archive migration plan.
 - Do not make storefront structure read live draft options when a published snapshot exists.
 - Do not make storefront variants ignore `product.published_version`.
+- Do not strip quota failure `error.i18n_key` or `error.context` metadata.
+- Do not stop marking detached media as needing rebinding after rebuild/template replacement flows.
 - Do not change error envelope shape; frontend error/i18n handling depends on it.
 - Do not reintroduce per-variant selection N+1 loading in list endpoints.
 - Do not make SSE execution perform work; SSE streams status only.

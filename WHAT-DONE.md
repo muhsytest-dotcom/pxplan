@@ -379,11 +379,49 @@ Verification completed:
 - Frontend i18n check: `npm run i18n:check` passed for 10 locales.
 - Frontend production build: `npm run build` passed.
 
+## Completed Slice 15: API Regression Coverage for Template Quotas and Rebuild Media Rebinding
+
+Status: Complete on 2026-05-17
+
+Added backend API-level release-hardening coverage for two remaining critical workflows: template quota failures and media rebinding after variant rebuild.
+
+Backend:
+- Added `test_template_apply_api_returns_i18n_quota_error_for_basic_store` to `PX-B/tests/test_catalog_tier_policy.py`.
+- The new template quota regression creates an oversized store-scoped template and verifies the admin apply endpoint returns the existing `PRODUCT_VARIANT_TIER_QUOTA_EXCEEDED` envelope.
+- Verified the API response carries `error.i18n_key = catalog.variant.errors.tier_quota_exceeded` and interpolation context `{ tier, limit, projected }`.
+- Added `test_rebuild_variants_marks_detached_media_for_rebinding` to `PX-B/tests/test_catalog_variants.py`.
+- The rebuild regression verifies rebuild impact reports media detachment before a full matrix rebuild.
+- Verified the rebuild path detaches media from removed variants and marks it with `needs_variant_rebinding = true`.
+
+Important reasoning:
+- The underlying template quota policy and rebuild media-detach behavior already existed, but release hardening needed end-to-end API regressions to protect the contracts future agents are most likely to break.
+- This slice intentionally did not alter runtime behavior, API paths, database schema, or archive-vs-delete semantics.
+- The archive-vs-delete migration remains a separate product/domain decision and should still be planned before changing variant deletion behavior.
+
+API, database, and schema changes:
+- No API path changes.
+- No database migration.
+- No schema changes.
+- Test-only coverage added for existing behavior.
+
+Verification completed:
+- Backend focused template quota API test: `.\.venv\bin\python -m pytest tests/test_catalog_tier_policy.py::test_template_apply_api_returns_i18n_quota_error_for_basic_store -q` passed.
+- Backend focused rebuild media rebinding test: `.\.venv\bin\python -m pytest tests/test_catalog_variants.py::test_rebuild_variants_marks_detached_media_for_rebinding -q` passed.
+- Backend affected suites: `.\.venv\bin\python -m pytest tests/test_catalog_tier_policy.py tests/test_catalog_variants.py -q` passed.
+- Backend full tests: `.\.venv\bin\python -m pytest tests -q` passed.
+- Backend lint: `.\.venv\bin\ruff check .` passed.
+- Backend typecheck: `.\.venv\bin\python -m mypy app` passed.
+- Frontend full tests: `npm test` passed (`301 passed`).
+- Frontend lint: `npm run lint` passed.
+- Frontend typecheck: `npm run typecheck` passed.
+- Frontend i18n check: `npm run i18n:check` passed for 10 locales.
+- Frontend production build: `npm run build` passed.
+
 ## Still Not Complete
 
 The full multi-phase plan is not finished yet. Remaining major areas:
 - **Phase 9: Observability & Metrics**: Deeper health views and alert policy surfaces can be added later, but core backend metrics and dashboard visibility are now complete.
 - **Policy-Based Tier Enforcement**: Variant structure write enforcement is now complete; any future non-variant catalog tier features should follow the same target-store policy pattern.
 - **Archive-vs-delete migration**: Finalizing the strategy for existing variants and historical references.
-- **E2E coverage**: Storefront published snapshot visibility now has API-level regression coverage; broader E2E coverage is still needed for template apply/quota failures, media rebinding after rebuild, and full browser-level admin/storefront workflows.
+- **E2E coverage**: Storefront published snapshot visibility, template apply quota failures, and media rebinding after rebuild now have API-level regression coverage. Full browser-level admin/storefront workflows are still pending.
 - **Dead-code cleanup**: Final pass across both apps after all phases are complete.
