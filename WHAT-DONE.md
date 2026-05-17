@@ -179,7 +179,7 @@ Backend:
 - Added a backend regression test asserting that variant job creation for a missing product returns `error.i18n_key = catalog.product.errors.not_found`.
 
 Frontend:
-- Completed French and German catalog variant error translations in `PX-F/px/lib/catalog/i18n.ts`.
+- Completed French and German catalog variant error translations in `PX-F/lib/catalog/i18n.ts`.
 - Updated the catalog i18n regression test to assert locale-specific French translation behavior.
 - Removed unused destructured values from `VariantStructureStudio` and cleaned the active-job effect dependency expression in `AdminProductEditForm`, eliminating lint warnings without changing behavior.
 

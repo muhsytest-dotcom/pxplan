@@ -1,5 +1,8 @@
 # Variant Domain Contract
 
+Status note, 2026-05-17:
+This remains the business-rule contract for variants. For current implementation status and pending work, read `AGENT_HANDOFF.md` and `WHAT-DONE.md` first.
+
 ## Purpose
 This document defines the authoritative business rules for variant lifecycle management in the ecommerce platform. It serves as the source of truth for behavior, superseding any implementation details.
 

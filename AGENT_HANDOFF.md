@@ -61,11 +61,11 @@ Still pending from the broader plan:
 - Broader E2E coverage for critical admin and storefront flows. Published snapshot storefront visibility now has API-level regression coverage; template quota failure, media rebinding after rebuild, and full browser-level flows still need coverage.
 - Final dead-code cleanup after remaining design decisions settle.
 - Optional deeper observability: alert policy surfaces, health views, reconnect metrics, and operational drilldowns.
-- Refresh stale planning docs. Several guide files still say error classification/retry/i18n are not implemented, but they are complete in the codebase and `WHAT-DONE.md`.
+- Keep planning docs aligned when future slices land.
 
 ## Known Issues or Blockers
 
-- Documentation drift exists in older plan files (`CODE_AGENT_COMPREHENSIVE_GUIDE.md`, `QUICK_REFERENCE.md`, `IMPLEMENTATION_CHECKLIST.md`, and related guide docs). Do not redo completed blocker work just because those files still show unchecked tasks.
+- Some historical notes in `WHAT-DONE.md` describe earlier blocker work as it existed at that time. Treat those as history, not current instructions.
 - Archive-vs-delete is still a real product/domain decision. Avoid hard-deleting historical variants further until that migration strategy is finalized.
 
 ## Important Files and Modules
@@ -126,7 +126,7 @@ The project should now move from stabilization into release hardening:
 
 ## Recommended Next Steps
 
-1. Refresh stale plan/checklist docs so they reflect Slices 1-14 and stop misleading future agents.
+1. Keep plan/checklist docs current when Slices 15+ land.
 2. Plan the archive-vs-delete migration carefully before touching variant deletion semantics.
 3. Add remaining E2E coverage for:
    - Template apply and quota failure.

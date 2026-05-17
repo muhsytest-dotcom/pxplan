@@ -1,27 +1,25 @@
-Please read and start the implementation based on the following documents:
+# Current Work Notes
 
-* `/home/muhsin/Desktop/muhsy/.lokiu/PX/plans/plan.md`
-* `/home/muhsin/Desktop/muhsy/.lokiu/PX/plans/technical-architecture-spec.md`
-* `/home/muhsin/Desktop/muhsy/.lokiu/PX/plans/variant-domain-contract.md`
-* `/home/muhsin/Desktop/muhsy/.lokiu/PX/plans/VARIANTS_FEATURE_STRUCTURE.md`
-* `/home/muhsin/Desktop/muhsy/.lokiu/PX/plans/WHAT-DONE.md`
+Last updated: 2026-05-17
 
+## Current Direction
 
+PX variants are complete through Slice 14. Continue with release hardening.
 
-The code must be well-maintained, reusable, organized, and structured to a production-level standard. We already have an existing architecture and workflow—please adhere to them and maintain consistency across the system.
+Recommended next slices:
+- Archive-vs-delete migration strategy and implementation.
+- Remaining E2E/API coverage for template quota failures, media rebinding after rebuild, and full browser admin-to-storefront flow.
+- Final dead-code cleanup after archive semantics settle.
+- Optional deeper observability.
 
+## Important Context
 
-Also, since the system supports multiple languages, ensure proper internationalization is followed throughout.
+- Do not redo completed blocker work.
+- Do not change variant hard-delete behavior without the archive migration plan.
+- Storefront structure must stay pinned to published snapshots.
+- Storefront variants must stay scoped to `product.published_version`.
+- Keep backend and frontend i18n behavior aligned with the existing implementation.
 
+## Documentation Rule
 
-In addition:
-
-
-Add comprehensive test cases at all levels (both frontend and backend).
-Remove any unused or dead code.
-Ensure the codebase is clean and maintainable.
-Make sure everything passes: build, tests, type checks, and linting for both frontend and backend.
-
-After completing the implementation, update the following file with detailed information about the completed work:
-
-`/home/muhsin/Desktop/muhsy/.lokiu/PX/plans/WHAT-DONE.md`
+After completing a slice, update `WHAT-DONE.md` and `AGENT_HANDOFF.md`.

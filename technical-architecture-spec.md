@@ -1,5 +1,8 @@
 # Technical Architecture Specification
 
+Status note, 2026-05-17:
+This remains an architecture reference. For current completion status and next work, read `AGENT_HANDOFF.md` and `WHAT-DONE.md` first.
+
 ## Purpose
 This document provides implementation-focused guidance for the variants feature, detailing the technical architecture, contracts, and patterns.
 

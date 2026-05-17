@@ -1,5 +1,8 @@
 # Variants Feature Codebase Structure
 
+Status note, 2026-05-17:
+This is a codebase map and may not list every line added after Slice 14. Use it for orientation, then verify against live code. Current status and next work are in `AGENT_HANDOFF.md` and `WHAT-DONE.md`.
+
 Complete mapping of the variants feature across PX-B (backend) and PX-F (frontend) applications.
 
 ---
@@ -216,7 +219,7 @@ Complete mapping of the variants feature across PX-B (backend) and PX-F (fronten
 ## Frontend Structure (PX-F)
 
 ### 1. Core Type Definitions
-**Location:** [PX-F/px/lib/catalog/types.ts](PX-F/px/lib/catalog/types.ts)
+**Location:** [PX-F/lib/catalog/types.ts](PX-F/lib/catalog/types.ts)
 
 #### Variant Types:
 - `ProductVariantRead` - Complete variant data with SKU, pricing, stock, status
@@ -249,7 +252,7 @@ Complete mapping of the variants feature across PX-B (backend) and PX-F (fronten
 - `AuthoritativeSnapshot` - Full product state snapshot with options, total_variants, active_job, rebuild_impact
 
 ### 2. API Client Functions
-**Location:** [PX-F/px/lib/catalog/api.ts](PX-F/px/lib/catalog/api.ts)
+**Location:** [PX-F/lib/catalog/api.ts](PX-F/lib/catalog/api.ts)
 
 #### Variant Template APIs:
 - `listVariantTemplates()` (Line 181) - GET `/catalog/admin/stores/{store_id}/variant-templates`
@@ -279,7 +282,7 @@ Complete mapping of the variants feature across PX-B (backend) and PX-F (fronten
 - `listStorefrontProductVariants()` (Line 678) - GET `/storefront/{store_domain}/products/{product_slug}/variants`
 
 ### 3. Variant Workspace (State Models)
-**Location:** [PX-F/px/lib/catalog/product-variant-workspace.ts](PX-F/px/lib/catalog/product-variant-workspace.ts)
+**Location:** [PX-F/lib/catalog/product-variant-workspace.ts](PX-F/lib/catalog/product-variant-workspace.ts)
 
 #### Type Definitions:
 - `VariantDraft` - Editable variant fields (SKU, price, stock, weight, active)
@@ -294,7 +297,7 @@ Complete mapping of the variants feature across PX-B (backend) and PX-F (fronten
 - `getSelectedValueId()` - Get active value ID for option
 
 ### 4. Variant Combination Matrix
-**Location:** [PX-F/px/lib/catalog/variant-matrix.ts](PX-F/px/lib/catalog/variant-matrix.ts)
+**Location:** [PX-F/lib/catalog/variant-matrix.ts](PX-F/lib/catalog/variant-matrix.ts)
 
 #### Key Types:
 - `VariantCombinationRow` - Single combination: selections + matching variant
@@ -318,7 +321,7 @@ Complete mapping of the variants feature across PX-B (backend) and PX-F (fronten
 - `VARIANT_COMBINATION_PREVIEW_LIMIT = 200` - Max rows to display
 
 ### 5. Variant Actions Hook
-**Location:** [PX-F/px/app/components/product-editor/use-product-variant-actions.ts](PX-F/px/app/components/product-editor/use-product-variant-actions.ts)
+**Location:** [PX-F/app/components/product-editor/use-product-variant-actions.ts](PX-F/app/components/product-editor/use-product-variant-actions.ts)
 
 **Hook Parameters:**
 ```typescript
@@ -352,7 +355,7 @@ type UseProductVariantActionsParams = {
 - `getRevertPreview()` - Preview what can be reverted
 
 ### 6. Variant Structure Studio Component
-**Location:** [PX-F/px/app/components/product-editor/variant-structure-studio.tsx](PX-F/px/app/components/product-editor/variant-structure-studio.tsx)
+**Location:** [PX-F/app/components/product-editor/variant-structure-studio.tsx](PX-F/app/components/product-editor/variant-structure-studio.tsx)
 
 **Props:**
 ```typescript
@@ -410,7 +413,7 @@ type Props = {
 - Repair actions (show/hide based on state)
 
 ### 7. Related Components
-**Location:** [PX-F/px/app/components/product-editor/](PX-F/px/app/components/product-editor/)
+**Location:** [PX-F/app/components/product-editor/](PX-F/app/components/product-editor/)
 
 - `product-variants-section.tsx` - Main variants section component
 - `variant-table-row.tsx` - Individual variant row renderer
@@ -423,14 +426,14 @@ type Props = {
 - `operational-hud.tsx` - Operational state HUD
 
 ### 8. Test Files
-**Location:** [PX-F/px/lib/catalog/__tests__/](PX-F/px/lib/catalog/__tests__/)
+**Location:** [PX-F/lib/catalog/__tests__/](PX-F/lib/catalog/__tests__/)
 
 - `variant-matrix.test.ts` - Combination matrix calculations
 - `product-variant-workspace.test.ts` - Workspace utilities and conversions
 - `api.test.ts` - API function tests
 - `validation.test.ts` - Variant validation
 
-**Location:** [PX-F/px/app/components/product-editor/__tests__/](PX-F/px/app/components/product-editor/__tests__/)
+**Location:** [PX-F/app/components/product-editor/__tests__/](PX-F/app/components/product-editor/__tests__/)
 
 - `variant-structure-studio.test.tsx` - Component tests
 - `product-variants-section.test.tsx` - Section component tests

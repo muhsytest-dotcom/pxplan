@@ -1,5 +1,8 @@
 # Variants Feature Architectural Stabilization Plan
 
+Status note, 2026-05-17:
+This is the original architectural plan and should be used for design context only. The active implementation status is tracked in `AGENT_HANDOFF.md` and `WHAT-DONE.md`; the live system is complete through Slice 14 and is now in release-hardening.
+
 ## Overview
 This enterprise-grade plan establishes a robust commerce domain architecture with deterministic behavior, operational resilience, async separation, concurrency modeling, scalability boundaries, and maintainability strategies for a serious FastAPI ecommerce platform.
 
