@@ -227,10 +227,43 @@ Verification completed:
 - Frontend i18n check: `npm run i18n:check` passed for 10 locales.
 - Frontend production build: `npm run build` passed.
 
+## Completed Slice 10: Frontend Variant Job Metrics Dashboard
+
+Status: Complete on 2026-05-17
+
+Completed the frontend/admin visualization layer for the backend variant job metrics from Slice 9.
+
+Frontend:
+- Added `VariantJobMetricsPanel` in `PX-F/app/components/variant-job-metrics-panel.tsx`.
+- Added the panel to the dashboard landing page at `PX-F/app/[locale]/(app)/dashboard/page.tsx`.
+- Added typed metrics API support via `getVariantJobMetrics` in `PX-F/lib/catalog/api.ts`.
+- Added `CatalogVariantJobMetricsResponse` in `PX-F/lib/catalog/types.ts`.
+- Added operational metrics copy in `PX-F/lib/i18n/ui-copy.ts` for all supported locales.
+- Rendered health status, active jobs, success rate, recent throughput, queue wait, duration, status counts, and classified error breakdown.
+- Kept the dashboard compact and operational, matching the existing admin UI patterns.
+
+Tests:
+- Added `PX-F/app/components/__tests__/variant-job-metrics-panel.test.tsx`.
+- Covered successful metrics rendering, empty state, and localized error state.
+- Extended catalog API tests for the metrics route.
+- Extended i18n copy tests to ensure operational metrics copy exists for all locales and title text is localized.
+
+Verification completed:
+- Frontend focused tests: `npm test -- app/components/__tests__/variant-job-metrics-panel.test.tsx lib/i18n/__tests__/ui-copy.test.ts lib/catalog/__tests__/api.test.ts` passed (`34 passed`).
+- Frontend full tests: `npm test` passed (`299 passed`).
+- Frontend lint: `npm run lint` passed.
+- Frontend typecheck: `npm run typecheck` passed.
+- Frontend i18n check: `npm run i18n:check` passed for 10 locales.
+- Frontend production build: `npm run build` passed.
+- Backend targeted tests: `python -m pytest tests/test_catalog_variant_observability.py tests/test_rate_limit.py -q` passed.
+- Backend full tests: `python -m pytest tests -q` passed.
+- Backend lint: `.\.venv\bin\ruff check .` passed.
+- Backend typecheck: `python -m mypy app` passed.
+
 ## Still Not Complete
 
 The full multi-phase plan is not finished yet. Remaining major areas:
-- **Phase 9: Observability & Metrics**: Frontend/admin dashboard visualization for the new backend job metrics and deeper health views.
+- **Phase 9: Observability & Metrics**: Deeper health views and alert policy surfaces can be added later, but core backend metrics and dashboard visibility are now complete.
 - **Phase 10: Policy-Based Tier Enforcement**: Broader enforcement of store tiers across all catalog operations.
 - **Archive-vs-delete migration**: Finalizing the strategy for existing variants and historical references.
 - **E2E coverage**: Broader E2E coverage for critical admin and storefront workflows.
