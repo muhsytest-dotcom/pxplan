@@ -260,6 +260,31 @@ Verification completed:
 - Backend lint: `.\.venv\bin\ruff check .` passed.
 - Backend typecheck: `python -m mypy app` passed.
 
+## Completed Slice 11: Frontend Variant Job SSE Recovery
+
+Status: Complete on 2026-05-17
+
+Improved the admin variant job update path so environments without native SSE support recover through polling without noisy console errors, while still showing users how the job progress is being refreshed.
+
+Frontend:
+- Updated `PX-F/lib/catalog/variant-job-events.ts` so `openVariantJobEventSource` is capability-aware and returns `null` when `EventSource` is unavailable.
+- Updated `PX-F/app/components/admin-product-edit-form.tsx` to switch active variant jobs to polling recovery when SSE cannot be opened or when the stream errors.
+- Removed noisy variant job SSE `console.log`, `console.warn`, and `console.error` output from the recovery path.
+- Added `variantJobConnectionMode` propagation into `ProductVariantsSection`.
+- Added localized job-panel badges for connected live updates and polling recovery.
+- Added catalog admin copy keys for the recovery status labels, with existing locale fallback behavior preserved.
+
+Tests:
+- Extended `PX-F/lib/catalog/__tests__/variant-job-events.test.ts` to cover missing `EventSource` support.
+- Extended `PX-F/app/components/product-editor/__tests__/product-variants-section.test.tsx` to cover the polling recovery badge.
+- Re-ran the admin product editor focused suite to verify active-job recovery now falls back without `EventSource is not defined` stderr noise.
+
+Verification completed:
+- Frontend focused tests: `npm test -- lib/catalog/__tests__/variant-job-events.test.ts app/components/product-editor/__tests__/product-variants-section.test.tsx app/components/__tests__/admin-product-edit-form.test.tsx` passed (`38 passed`).
+- Frontend lint: `npm run lint` passed.
+- Frontend typecheck: `npm run typecheck` passed.
+- Frontend i18n check: `npm run i18n:check` passed for 10 locales.
+
 ## Still Not Complete
 
 The full multi-phase plan is not finished yet. Remaining major areas:
