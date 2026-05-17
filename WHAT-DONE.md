@@ -1,6 +1,6 @@
 # Variants Stabilization Progress
 
-Last updated: 2026-05-16
+Last updated: 2026-05-17
 
 ## Completed Slice 1: Core Domain Foundation
 
@@ -348,11 +348,42 @@ Verification completed:
 - Frontend i18n check: `npm run i18n:check` passed for 10 locales.
 - Frontend production build: `npm run build` passed.
 
+## Completed Slice 14: Storefront Published Snapshot Regression Coverage
+
+Status: Complete on 2026-05-17
+
+Added focused backend integration coverage for the admin generation -> snapshot publish -> storefront visibility contract.
+
+Backend:
+- Added `test_published_snapshot_controls_storefront_while_draft_structure_changes` to `PX-B/tests/test_catalog_variants.py`.
+- Covered generate-missing job creation through the API and direct worker execution with `execute_catalog_variant_job`.
+- Verified storefront variants remain empty before the generated snapshot is explicitly published.
+- Verified publishing a generated snapshot exposes the expected active variant and localized selection data to the storefront.
+- Verified later draft structure edits do not leak into storefront structure or variant responses while the published snapshot remains authoritative.
+- Preserved existing architecture: no API, database, schema, or runtime behavior changes were needed for this slice.
+
+Important reasoning:
+- The project already has immutable snapshots and publication swaps, but release hardening needed a concrete regression test that exercises the full API-level publication boundary.
+- This intentionally avoids the unresolved archive-vs-delete product decision and does not change variant deletion semantics.
+- Storefront visibility must remain controlled by `product.published_version`; draft option/value edits can continue safely without partial storefront exposure.
+
+Verification completed:
+- Backend focused test: `.\.venv\bin\python -m pytest tests/test_catalog_variants.py::test_published_snapshot_controls_storefront_while_draft_structure_changes -q` passed.
+- Backend catalog variant suite: `.\.venv\bin\python -m pytest tests/test_catalog_variants.py -q` passed.
+- Backend full tests: `.\.venv\bin\python -m pytest tests -q` passed.
+- Backend lint: `.\.venv\bin\ruff check .` passed.
+- Backend typecheck: `.\.venv\bin\python -m mypy app` passed.
+- Frontend full tests: `npm test` passed (`301 passed`).
+- Frontend lint: `npm run lint` passed.
+- Frontend typecheck: `npm run typecheck` passed.
+- Frontend i18n check: `npm run i18n:check` passed for 10 locales.
+- Frontend production build: `npm run build` passed.
+
 ## Still Not Complete
 
 The full multi-phase plan is not finished yet. Remaining major areas:
 - **Phase 9: Observability & Metrics**: Deeper health views and alert policy surfaces can be added later, but core backend metrics and dashboard visibility are now complete.
 - **Policy-Based Tier Enforcement**: Variant structure write enforcement is now complete; any future non-variant catalog tier features should follow the same target-store policy pattern.
 - **Archive-vs-delete migration**: Finalizing the strategy for existing variants and historical references.
-- **E2E coverage**: Broader E2E coverage for critical admin and storefront workflows.
+- **E2E coverage**: Storefront published snapshot visibility now has API-level regression coverage; broader E2E coverage is still needed for template apply/quota failures, media rebinding after rebuild, and full browser-level admin/storefront workflows.
 - **Dead-code cleanup**: Final pass across both apps after all phases are complete.

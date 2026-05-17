@@ -6,7 +6,7 @@ Read this first, then `00_START_HERE.md`, `WHAT-DONE.md`, and the architecture d
 
 ## Latest Implementation Status
 
-The variants stabilization work is largely complete through Slice 13.
+The variants stabilization work is largely complete through Slice 14.
 
 Completed:
 - Core variant domain foundation and canonical identity.
@@ -19,6 +19,7 @@ Completed:
 - Variant job SSE recovery fallback with visible live/polling state.
 - Batched variant selection resolution for admin/storefront listing.
 - Policy-based target-store tier enforcement for option-value growth, template application, and structure copy.
+- API-level regression coverage for published snapshot storefront visibility while draft structure changes continue.
 
 Current quality gate from the latest slice:
 - Backend full tests: `python -m pytest tests -q` passed.
@@ -32,34 +33,32 @@ Current quality gate from the latest slice:
 
 ## Summary of Latest Completed Work
 
-Slice 13 closed the tier-policy gap in structure writes:
-- Added `ProductVariantTierQuotaExceededError` in `PX-B/app/exceptions/errors.py`.
-- Added shared projected variant count and tier quota helpers in `PX-B/app/modules/catalog/service.py`.
-- Enforced target-store Basic/Pro limits in:
-  - `create_product_option_value_row`
-  - `apply_variant_template_to_product`
-  - `copy_product_structure`
-- Preserved rebuild-impact and job-submission protection for legacy/imported over-quota structures.
-- Added `PX-B/tests/test_catalog_tier_policy.py`.
-- Updated `PX-B/tests/test_catalog_variant_ops.py` so the legacy over-quota regression seeds data directly instead of using now-protected public writes.
+Slice 14 added release-hardening coverage for the published snapshot boundary:
+- Added `test_published_snapshot_controls_storefront_while_draft_structure_changes` in `PX-B/tests/test_catalog_variants.py`.
+- Exercised generate-missing job creation through the admin API and direct worker execution through `execute_catalog_variant_job`.
+- Verified storefront variants remain empty until the generated snapshot is explicitly published.
+- Verified the published snapshot exposes the expected storefront variant and selection data.
+- Verified later draft option/value edits do not leak into storefront structure or variants while `published_version` remains pinned.
+- No API, database, schema, or runtime behavior changes were made.
 
 ## Current Architecture Decisions
 
+- **Published snapshot owns storefront structure**: Once `product.published_version` is set, storefront structure reads must resolve from the matching immutable `CatalogProductStructureSnapshot`, not live draft options.
+- **Published version owns storefront variants**: Storefront variant listing must remain scoped to variants generated for `product.published_version` and must not expose newer draft structures before publication.
 - **Target-store policy wins**: Template application and structure copy must enforce the destination product/store tier, not the source/template origin.
 - **Block invalid structures early**: Public structure writes should refuse projected over-quota matrices before the user reaches rebuild/job execution.
 - **Keep legacy safeguards**: Rebuild preview and job creation must still detect over-quota data that may come from migrations, imports, or older records.
 - **Error envelopes stay i18n-compatible**: New user-facing policy failures should include `error.i18n_key` and `error.context`.
-- **No broad refactors during policy work**: The latest slice intentionally stayed in existing service/router/test patterns.
 
 ## Important Reasoning Behind Changes
 
-Before Slice 13, a Basic-tier store could build an oversized option matrix through direct option-value additions, template application, or structure copy. The rebuild preview and job endpoints would later block generation, but the structure itself could already be in a bad state. The new checks move policy enforcement to the mutation boundary while retaining downstream guards for old or imported data.
+Slice 14 was test-focused because the implementation already had immutable snapshots and publication swaps, but future changes could accidentally read live draft structure from storefront paths. The new regression preserves the publication boundary without touching the unresolved archive-vs-delete semantics.
 
 ## Pending Tasks
 
 Still pending from the broader plan:
 - Final archive-vs-delete migration strategy for variants and historical references.
-- Broader E2E coverage for critical admin and storefront flows.
+- Broader E2E coverage for critical admin and storefront flows. Published snapshot storefront visibility now has API-level regression coverage; template quota failure, media rebinding after rebuild, and full browser-level flows still need coverage.
 - Final dead-code cleanup after remaining design decisions settle.
 - Optional deeper observability: alert policy surfaces, health views, reconnect metrics, and operational drilldowns.
 - Refresh stale planning docs. Several guide files still say error classification/retry/i18n are not implemented, but they are complete in the codebase and `WHAT-DONE.md`.
@@ -91,6 +90,7 @@ Frontend:
 - `PX-F/app/components/variant-job-metrics-panel.tsx`: Operational metrics dashboard panel.
 
 Tests:
+- `PX-B/tests/test_catalog_variants.py`
 - `PX-B/tests/test_catalog_tier_policy.py`
 - `PX-B/tests/test_catalog_variant_ops.py`
 - `PX-B/tests/test_catalog_variant_observability.py`
@@ -103,10 +103,8 @@ Tests:
 Latest slice:
 - No database migration.
 - No public API path changes.
-- Error response semantics expanded for tier quota failures through existing `AppException` envelope:
-  - `code`: `PRODUCT_VARIANT_TIER_QUOTA_EXCEEDED`
-  - `error.i18n_key`: `catalog.variant.errors.tier_quota_exceeded`
-  - `error.context`: `{ tier, limit, projected }`
+- No schema changes.
+- Test-only coverage added for existing snapshot publication and storefront reads.
 
 Earlier completed work added job error tracking fields, durable variant job events, snapshots, metrics response types, and rate-limit policies. See `WHAT-DONE.md` for slice-by-slice details.
 
@@ -114,7 +112,7 @@ Earlier completed work added job error tracking fields, durable variant job even
 
 The project should now move from stabilization into release hardening:
 - Decide and implement archive-vs-delete migration.
-- Add E2E tests around the most valuable flows.
+- Add the remaining E2E/API regression tests around the most valuable flows.
 - Clean stale docs and dead code.
 - Keep quality gates full and boring: backend tests/lint/mypy; frontend tests/lint/typecheck/i18n/build.
 
@@ -124,16 +122,16 @@ The project should now move from stabilization into release hardening:
 - `pro` is the only higher tier currently recognized by `get_variant_limit_for_tier`.
 - Public structure mutations should be prevented from creating over-quota matrices, even if generation is not immediately requested.
 - Legacy/imported over-quota structures may still exist and must remain safely blocked at preview/job time.
+- Snapshot publication remains explicit through `/catalog/admin/products/{product_id}/snapshots/{snapshot_id}/publish`; generation jobs do not auto-publish.
 
 ## Recommended Next Steps
 
-1. Refresh stale plan/checklist docs so they reflect Slices 1-13 and stop misleading future agents.
+1. Refresh stale plan/checklist docs so they reflect Slices 1-14 and stop misleading future agents.
 2. Plan the archive-vs-delete migration carefully before touching variant deletion semantics.
-3. Add E2E coverage for:
-   - Variant setup and generate-missing.
+3. Add remaining E2E coverage for:
    - Template apply and quota failure.
    - Media rebinding after rebuild.
-   - Storefront published snapshot visibility.
+   - Full browser-level admin setup/generate/publish/storefront visibility.
 4. Run the full quality gate after every implementation slice.
 
 ## Things Future Agents Should Avoid Breaking
@@ -141,6 +139,8 @@ The project should now move from stabilization into release hardening:
 - Do not bypass `assert_no_active_job` for structure mutations.
 - Do not remove rebuild/job quota checks; they protect legacy/imported data.
 - Do not hard-delete variants that may have historical references without the archive migration plan.
+- Do not make storefront structure read live draft options when a published snapshot exists.
+- Do not make storefront variants ignore `product.published_version`.
 - Do not change error envelope shape; frontend error/i18n handling depends on it.
 - Do not reintroduce per-variant selection N+1 loading in list endpoints.
 - Do not make SSE execution perform work; SSE streams status only.
