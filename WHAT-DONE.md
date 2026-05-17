@@ -193,10 +193,44 @@ Verification completed:
 - Frontend i18n check: passed for 10 locales with `npm run i18n:check`.
 - Frontend production build: passed with `npm run build` after allowing the build to fetch required Google font assets.
 
+## Completed Slice 9: Backend Variant Job Observability and Write Protection
+
+Status: Complete on 2026-05-17
+
+Implemented the backend half of the Phase 9 observability work and added rate limiting protection to variant job mutation endpoints.
+
+Backend:
+- Added durable variant job metrics aggregation in `PX-B/app/modules/catalog/service.py`.
+- Added `CatalogVariantJobMetricsResponse` in `PX-B/app/modules/catalog/schemas.py`.
+- Added authenticated owner-scoped endpoint `GET /catalog/admin/metrics/variant-jobs`.
+- Supported optional `store_id` filtering while preventing cross-store leakage.
+- Added Prometheus-compatible lifecycle instrumentation in `PX-B/app/core/metrics.py`.
+- Tracked job transitions, queue wait duration, and execution duration from the shared `_mark_catalog_variant_job` transition path.
+- Added `CATALOG_VARIANT_JOB_WRITE` to the existing rate-limit policy registry.
+- Applied the policy to generate-missing, rebuild, and cancel variant job endpoints.
+
+Tests:
+- Added `PX-B/tests/test_catalog_variant_observability.py`.
+- Covered durable metrics aggregation for terminal and active jobs.
+- Covered authenticated metrics endpoint scoping to stores owned by the current user.
+- Covered catalog variant job write rate limiting with the existing `RateLimitExceededError` response envelope.
+
+Verification completed:
+- Backend targeted tests: `python -m pytest tests/test_catalog_variant_observability.py tests/test_rate_limit.py -q` passed.
+- Backend catalog regression tests: `python -m pytest tests/test_catalog_variant_observability.py tests/test_catalog_variant_ops.py tests/test_catalog_variants.py tests/test_job_error_classification.py -q` passed.
+- Backend full tests: `python -m pytest tests -q` passed.
+- Backend lint: `.\.venv\bin\ruff check .` passed.
+- Backend typecheck: `python -m mypy app` passed.
+- Frontend full tests: `293 passed` with `npm test`.
+- Frontend lint: `npm run lint` passed.
+- Frontend typecheck: `npm run typecheck` passed.
+- Frontend i18n check: `npm run i18n:check` passed for 10 locales.
+- Frontend production build: `npm run build` passed.
+
 ## Still Not Complete
 
 The full multi-phase plan is not finished yet. Remaining major areas:
-- **Phase 9: Observability & Metrics**: Adding an observability dashboard for job performance metrics and health.
+- **Phase 9: Observability & Metrics**: Frontend/admin dashboard visualization for the new backend job metrics and deeper health views.
 - **Phase 10: Policy-Based Tier Enforcement**: Broader enforcement of store tiers across all catalog operations.
 - **Archive-vs-delete migration**: Finalizing the strategy for existing variants and historical references.
 - **E2E coverage**: Broader E2E coverage for critical admin and storefront workflows.
