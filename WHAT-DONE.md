@@ -656,3 +656,31 @@ The full multi-phase plan is not finished yet. Remaining major areas:
 - All `make migrate`, `make run`, `make dev`, and `pytest` now execute exclusively against PostgreSQL.
 - Docs (`DATABASE_CONFIGURATION.md`, `testing.md`) and plans cleaned of SQLite references.
 - Verified: dedicated DB URL tests + lint/typecheck pass cleanly.
+
+
+## Completed Slice 21: Logical Variant Retention & Audit Trail (Polish)
+
+Status: Complete on 2026-05-18
+
+Summary:
+- Fully aligned the variant logical soft-deletion strategy with the finalized `ARCHIVE_DELETE_MIGRATION_STRATEGY.md` requirements.
+- Completed renaming misleading deletion semantics to logical archiving inside the repository, service, routes, and tests.
+- Designed and integrated structured `ArchiveReason` enums and the `VariantAuditEvent` tracking model & database table.
+- Implemented the periodic 90-day draft soft-delete cleanup policy with strict safety/dependency checks.
+
+Database & Alembic:
+- Added `archive_reason: str | None = Field(default=None, max_length=32, index=True)` to `ProductVariant` in [`models.py`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-B/app/modules/catalog/models.py).
+- Created `VariantAuditEvent` model table storing `product_id`, `variant_id`, `action` ("ARCHIVED" / "RESTORED"), `reason`, `performed_by` (admin UUID), and serializable `context` metadata.
+- Generated and registered the Alembic migration version `f9c7d3e9f205` in [`f9c7d3e9f205_add_variant_audit_and_reason.py`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-B/alembic/versions/f9c7d3e9f205_add_variant_audit_and_reason.py) declaring the column and audit table indices.
+
+Backend API, Schemas & Services:
+- Renamed all variant deletion service functions: `delete_product_variant_row` -> `archive_product_variant_row`.
+- Renamed API router endpoints: `delete_product_variant_admin` -> `archive_product_variant_admin`.
+- Renamed repository hard-delete function: `delete_product_variant` -> `hard_delete_product_variant` to prevent accidental database wipes, and added the soft-deletion repository helper `archive_product_variant`.
+- Updated `ProductVariantRead` in [`schemas.py`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-B/app/modules/catalog/schemas.py) and frontend `ProductVariantRead` type in [`types.ts`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-F/px/lib/catalog/types.ts) to support the new optional `archive_reason` field.
+- Integrated automated auditing: every logical archive/restore action automatically writes a structured entry to `VariantAuditEvent`.
+- Implemented `cleanup_archived_variants_policy` periodic task in `service.py` to physically delete archived variants older than 90 days that possess zero references to media or active attributes. Exposed this task via a secure admin endpoint `/admin/variants/cleanup`.
+
+Tests and validation:
+- Updated E2E lifecycle tests in [`test_catalog_variants.py`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-B/tests/test_catalog_variants.py) to assert structured `archive_reason` returns.
+- Added comprehensive regression tests in `test_variant_audit_events_and_cleanup` validating audit event writing, 90-day draft retention, dependency checks, and clean physical deletions upon threshold expiration.
