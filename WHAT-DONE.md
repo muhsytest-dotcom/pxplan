@@ -736,11 +736,15 @@ Backend:
 - Fixed a nested SQL `select` syntax error in `restore_product_variant_row` in [`service.py`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-B/app/modules/catalog/service.py) that caused subquery crashes under PostgreSQL.
 - Imported `select` inside [`test_catalog_variants.py`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-B/tests/test_catalog_variants.py) to fix a NameError during test execution of variant lifecycle transitions.
 - Imported `func` locally in the `cleanup_archived_variants_policy` method inside [`service.py`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-B/app/modules/catalog/service.py) to fix NameError crashes during cleanup.
+- Added a local database `session.flush()` immediately after deleting variant value links inside `cleanup_archived_variants_policy` in [`service.py`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-B/app/modules/catalog/service.py) to satisfy PostgreSQL foreign key constraints before variant deletion.
 - Mapped and populated `archived_at` and `archive_reason` attributes in the variant API builder `_build_variant_read` inside [`router.py`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-B/app/modules/catalog/router.py).
 
 Tests:
 - Supplied `public_url` and `storage_key` fields to all `ProductMedia` instantiations in [`test_catalog_archive_retention.py`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-B/tests/test_catalog_archive_retention.py) and [`test_catalog_invariants.py`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-B/tests/test_catalog_invariants.py) to satisfy non-nullable PostgreSQL column constraints.
-- Rewrote the outdated `_create_product` helper in [`test_catalog_invariants.py`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-B/tests/test_catalog_invariants.py) to match the current product creation API schema (proper status field and translations payload).
+- Created a valid `AttributeDefinition` fixture and populated the required `value_json` field on `ProductAttributeValue` in [`test_catalog_archive_retention.py`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-B/tests/test_catalog_archive_retention.py) to satisfy not-null and foreign key constraints under PostgreSQL.
+- Imported `UUID` in [`test_catalog_invariants.py`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-B/tests/test_catalog_invariants.py) to resolve the NameError.
+- Imported and utilized `capture_catalog_product_structure_snapshot` instead of the legacy `create_catalog_product_snapshot` in [`test_catalog_invariants.py`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-B/tests/test_catalog_invariants.py).
+- Wrapped all direct service module invocations (`archive_product_variant_row` and `restore_product_variant_row`) with `UUID(...)` objects in [`test_catalog_invariants.py`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-B/tests/test_catalog_invariants.py) to resolve string compared to UUID comparison false negatives.
 - Corrected the `DUPLICATE_SKU` and `INVALID_COMBINATION` assertion targets in [`test_catalog_variants.py`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-B/tests/test_catalog_variants.py) to query the proper `["error"]["i18n_key"]` sub-object in the HTTP exception JSON response body.
 
 Verification completed:
