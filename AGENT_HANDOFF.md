@@ -96,7 +96,7 @@ Backend:
 - `PX-B/app/exceptions/errors.py`: App exception classes and i18n error metadata.
 - `PX-B/app/core/i18n_keys.py`: Backend i18n key registry.
 - `PX-B/app/core/rate_limit/policies.py`: Rate-limit policy registry.
-- `PX-B/tests/conftest.py`: SQLite/PostgreSQL test harness and schema isolation.
+- `PX-B/tests/conftest.py`: Strict PostgreSQL-only test harness (Testcontainers + Alembic per session).
 - `PX-B/alembic/env.py`: Alembic migration environment and logging setup.
 - `PX-B/alembic/versions/d4f2a9b7c801_add_product_variant_lifecycle_status.py`: Product variant lifecycle migration.
 
@@ -188,3 +188,8 @@ The project should continue release hardening:
 - Do not reintroduce per-variant selection N+1 loading in list endpoints.
 - Do not make SSE execution perform work; SSE streams status only.
 - Do not update `WHAT-DONE.md` until implementation and validation for a slice are complete.
+
+## 2026-05-18 Update: Strict PostgreSQL Only
+- Single `.env.local.dev` (Postgres) is now canonical.
+- No more SQLite paths or conditionals anywhere (config, fixtures, docs, env files).
+- All tests, make targets, and local runs use PostgreSQL exclusively.

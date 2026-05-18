@@ -620,3 +620,13 @@ The full multi-phase plan is not finished yet. Remaining major areas:
 - Ruff: clean
 - Mypy: clean
 - Next incremental focus: continue E2E coverage and targeted dead-code removal.
+
+## 2026-05-18: Strict PostgreSQL Enforcement (no SQLite fallback)
+
+- Removed all SQLite defaults and fallback logic across the backend.
+- `.env.local.dev` is now the single development file (renamed from `.env.local.pg` and merged).
+- `app/core/config.py`, `app/db/session.py`, `tests/conftest.py`, `alembic.ini`, `.env.example`, and docs updated.
+- `client` and `session` fixtures now always use PostgreSQL + Testcontainers.
+- All `make migrate`, `make run`, `make dev`, and `pytest` now execute exclusively against PostgreSQL.
+- Docs (`DATABASE_CONFIGURATION.md`, `testing.md`) and plans cleaned of SQLite references.
+- Verified: dedicated DB URL tests + lint/typecheck pass cleanly.
