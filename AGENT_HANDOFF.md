@@ -1,12 +1,12 @@
 # Agent Handoff and Continuity
 
-Last updated: 2026-05-17
+Last updated: 2026-05-18
 
 Read this first, then `00_START_HERE.md`, `WHAT-DONE.md`, and the architecture docs. Some older guide files still describe earlier slice numbers, so treat this file plus `WHAT-DONE.md` and the live code as the current source of truth.
 
 ## Latest Implementation Status
 
-The variants stabilization work is complete through Slice 16.
+The variants stabilization work is complete through Slice 17.
 
 Completed:
 - Core variant domain foundation and canonical identity.
@@ -22,31 +22,27 @@ Completed:
 - API-level regression coverage for published snapshot storefront visibility while draft structure changes continue.
 - API-level regression coverage for template quota failures and rebuild media rebinding.
 - Frontend admin workflow for explicitly publishing generated product structure snapshots to storefront.
+- PostgreSQL backend test isolation and FK-ordering hardening, with the full Postgres suite passing.
 
 Current quality gate from the latest slice:
-- Frontend focused tests passed: `npm test -- lib/catalog/__tests__/api.test.ts app/components/product-editor/__tests__/product-variants-section.test.tsx app/components/__tests__/admin-product-edit-form.test.tsx` (`61 passed`).
+- Backend PostgreSQL full suite passed: `PATH="$PWD/.venv/bin:$PATH" python -m dotenv -f .env.local.pg run -- pytest -v` (`248 passed`, `209 warnings`).
+- Backend Ruff passed: `.venv/bin/ruff check .`.
+- Backend mypy passed: `.venv/bin/python -m mypy app`.
 - Frontend full tests passed: `npm test` (`303 passed`).
 - Frontend lint passed: `npm run lint`.
 - Frontend typecheck passed: `npm run typecheck`.
 - Frontend i18n check passed: `npm run i18n:check` for 10 locales.
 - Frontend production build passed: `npm run build`.
-- Backend Ruff passed under WSL venv: `wsl bash -lc "cd /mnt/d/Github/muhsinmuhsy/PX/PX-B && .venv/bin/ruff check ."`.
-- Backend mypy passed under WSL venv: `wsl bash -lc "cd /mnt/d/Github/muhsinmuhsy/PX/PX-B && .venv/bin/python -m mypy app"`.
-- Backend store-domain module passed: `wsl bash -lc "cd /mnt/d/Github/muhsinmuhsy/PX/PX-B && .venv/bin/python -m pytest tests/test_store_domains.py -q"`.
-- Backend full-suite note: one WSL full-suite run reached a single unrelated failure in `tests/test_store_domains.py::test_invalid_domain_returns_field_error` (`401` instead of expected `400`), while the isolated test and module both passed. A repeated full-suite run timed out before completion. This appears to be existing cross-test/order sensitivity, not caused by Slice 16 runtime logic.
 
 ## Summary of Latest Completed Work
 
-Slice 16 wired frontend snapshot publication into the admin product variants workflow:
-- Added frontend contract support for structure snapshots and product publication versions in `PX-F/lib/catalog/types.ts`.
-- Added frontend API client methods in `PX-F/lib/catalog/api.ts` for:
-  - `GET /catalog/admin/products/{product_id}/snapshots`
-  - `POST /catalog/admin/products/{product_id}/snapshots/{snapshot_id}/publish`
-- Updated `PX-F/app/components/admin-product-edit-form.tsx` to load snapshots, track `published_version`, detect the latest unpublished generated snapshot, publish it, and refresh authoritative snapshot/media/snapshot state after publication.
-- Updated `PX-F/app/components/product-editor/product-variants-section.tsx` with a localized publish-ready panel that appears only when `latestSnapshot.version > publishedVersion`.
-- Added frontend tests for API routes, the publish-ready panel, and the integrated admin publish flow.
-- No backend snapshot publication behavior, database schema, or backend API path was changed.
-- Cleaned backend Ruff issues so the WSL backend lint gate passes.
+Slice 17 stabilized PostgreSQL backend validation and refreshed the full project gates:
+- Added PostgreSQL schema reset support in `PX-B/tests/conftest.py` before running Alembic migrations for migrated test fixtures.
+- Preserved pytest/application log capture during repeated Alembic migrations by setting `disable_existing_loggers=False` in `PX-B/alembic/env.py`.
+- Made FK-sensitive catalog deletes explicit by flushing child deletes/detachments before parent deletes for variants, option values, and categories.
+- Updated direct-session Postgres tests to seed real parent `User`, `Store`, and `Product` rows where real foreign keys require them.
+- Cleaned Ruff style issues in existing Alembic migration files.
+- Confirmed the previous full-suite store-domain/order-sensitivity note is no longer reproducing under the full PostgreSQL run.
 
 ## Current Architecture Decisions
 
@@ -63,9 +59,9 @@ Slice 16 wired frontend snapshot publication into the admin product variants wor
 
 ## Important Reasoning Behind Changes
 
-Slice 16 focused on closing the product workflow gap between backend snapshot publication and admin usability. The backend already had immutable snapshots and publish endpoints, but the frontend could only view authoritative draft state. Wiring the existing endpoints into the variants tab makes the release path coherent without changing the underlying publication contract.
+Slice 17 focused on making the PostgreSQL validation path trustworthy. SQLite was allowing random-parent fixture data and less strict FK timing to pass; Postgres correctly rejected it. The test harness now resets the reused Postgres container schema before migrations, and FK-sensitive service deletes flush child mutations before deleting parent records.
 
-The implementation intentionally avoids auto-publish behavior. Storefront visibility must remain an explicit admin action so draft variant structure changes cannot leak into storefront responses.
+The implementation intentionally avoids runtime API or schema changes. It hardens test isolation, delete ordering, and validation fidelity while preserving the existing published-snapshot and explicit-publication contracts.
 
 The archive-vs-delete migration remains higher risk and was not changed in this slice.
 
@@ -74,22 +70,20 @@ The archive-vs-delete migration remains higher risk and was not changed in this 
 Still pending from the broader plan:
 - Final archive-vs-delete migration strategy for variants and historical references.
 - Broader browser-level E2E coverage for full admin setup -> generate -> publish -> storefront visibility.
-- Investigate backend full-suite order sensitivity around `tests/test_store_domains.py::test_invalid_domain_returns_field_error`.
 - Final dead-code cleanup after remaining design decisions settle.
 - Optional deeper observability: alert policy surfaces, health views, reconnect metrics, and operational drilldowns.
 - Keep planning docs aligned when future slices land.
 
 ## Known Issues or Blockers
 
-- The backend venv in this workspace is Linux/WSL-style. From PowerShell, use `wsl bash -lc "cd /mnt/d/Github/muhsinmuhsy/PX/PX-B && .venv/bin/<command>"` for real backend validation. Direct PowerShell calls to `.venv\bin\python` can silently do nothing because the symlink/script layout is not native Windows.
-- Backend full-suite validation is currently not boring: one run found an isolated-passing store-domain test failing only in the full suite, and a repeated full run timed out. Investigate this before treating backend full-suite health as clean.
+- The backend venv in this workspace is Linux-style. Ensure `.venv/bin` is on `PATH` when using the exact dotenv command shape, because `python -m dotenv -f .env.local.pg run -- pytest -v` otherwise may not find `pytest` in a non-activated shell.
 - Some historical notes in `WHAT-DONE.md` describe earlier blocker work as it existed at that time. Treat those as history, not current instructions.
 - Archive-vs-delete is still a real product/domain decision. Avoid hard-deleting historical variants further until that migration strategy is finalized.
 
 ## Important Files and Modules
 
 Backend:
-- `PX-B/app/modules/catalog/service.py`: Core variant business logic, snapshots, jobs, quota enforcement, selection resolution.
+- `PX-B/app/modules/catalog/service.py`: Core variant business logic, snapshots, jobs, quota enforcement, selection resolution, and FK-sensitive delete ordering.
 - `PX-B/app/modules/catalog/router.py`: Catalog admin/storefront API routes; Slice 16 only changed the metrics route query annotation for Ruff compliance.
 - `PX-B/app/modules/catalog/variant_domain.py`: Shared domain constants and canonical identity helpers.
 - `PX-B/app/modules/catalog/variant_events.py`: Durable SSE event bus.
@@ -97,6 +91,8 @@ Backend:
 - `PX-B/app/exceptions/errors.py`: App exception classes and i18n error metadata.
 - `PX-B/app/core/i18n_keys.py`: Backend i18n key registry.
 - `PX-B/app/core/rate_limit/policies.py`: Rate-limit policy registry.
+- `PX-B/tests/conftest.py`: SQLite/PostgreSQL test harness and schema isolation.
+- `PX-B/alembic/env.py`: Alembic migration environment and logging setup.
 
 Frontend:
 - `PX-F/lib/catalog/api.ts`: Catalog API client, now includes structure snapshot list/publish methods.
@@ -123,10 +119,16 @@ Tests:
 ## API, Database, and Schema Changes
 
 Latest slice:
-- Frontend API client now calls existing backend endpoints:
+- No API path changes.
+- No new database migration.
+- No schema changes.
+- Existing Alembic migration files received style-only Ruff cleanup.
+
+Previous Slice 16:
+- Frontend API client calls existing backend endpoints:
   - `GET /catalog/admin/products/{product_id}/snapshots`
   - `POST /catalog/admin/products/{product_id}/snapshots/{snapshot_id}/publish`
-- Frontend type contracts now expose `ProductRead.snapshot_version`, `ProductRead.published_version`, `CatalogVariantJobRead.snapshot_id`, and `CatalogProductStructureSnapshotRead`.
+- Frontend type contracts expose `ProductRead.snapshot_version`, `ProductRead.published_version`, `CatalogVariantJobRead.snapshot_id`, and `CatalogProductStructureSnapshotRead`.
 - No backend API path changes.
 - No database migration.
 - No backend schema changes.
@@ -136,11 +138,10 @@ Earlier completed work added job error tracking fields, durable variant job even
 ## Current Implementation Direction
 
 The project should continue release hardening:
-- Investigate and stabilize backend full-suite order sensitivity.
 - Add browser-level E2E coverage for admin setup -> generate -> publish -> storefront visibility.
 - Decide and implement archive-vs-delete migration.
 - Clean stale/dead code after archive semantics settle.
-- Keep quality gates explicit, and run backend gates through WSL in this workspace.
+- Keep quality gates explicit, and run backend gates against PostgreSQL for backend changes.
 
 ## Assumptions Made
 
@@ -153,11 +154,11 @@ The project should continue release hardening:
 
 ## Recommended Next Steps
 
-1. Investigate the backend full-suite `test_store_domains.py` order-sensitive failure and timeout.
-2. Add browser-level E2E coverage for the complete admin generate/publish/storefront flow.
-3. Plan the archive-vs-delete migration carefully before touching variant deletion semantics.
+1. Add browser-level E2E coverage for the complete admin generate/publish/storefront flow.
+2. Plan the archive-vs-delete migration carefully before touching variant deletion semantics.
+3. Continue final dead-code cleanup only after archive semantics are decided.
 4. Keep plan/checklist docs current when Slices 16+ land.
-5. Run full frontend gates and WSL backend gates after every implementation slice.
+5. Run full frontend gates and PostgreSQL backend gates after every implementation slice.
 
 ## Things Future Agents Should Avoid Breaking
 

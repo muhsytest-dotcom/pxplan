@@ -1,6 +1,6 @@
 # Variants Stabilization Progress
 
-Last updated: 2026-05-17
+Last updated: 2026-05-18
 
 ## Completed Slice 1: Core Domain Foundation
 
@@ -465,7 +465,54 @@ Verification completed:
 - Backend lint via WSL venv: `wsl bash -lc "cd /mnt/d/Github/muhsinmuhsy/PX/PX-B && .venv/bin/ruff check ."` passed.
 - Backend typecheck via WSL venv: `wsl bash -lc "cd /mnt/d/Github/muhsinmuhsy/PX/PX-B && .venv/bin/python -m mypy app"` passed.
 - Backend focused store-domain regression check: `wsl bash -lc "cd /mnt/d/Github/muhsinmuhsy/PX/PX-B && .venv/bin/python -m pytest tests/test_store_domains.py -q"` passed.
-- Backend full test note: first WSL full-suite run completed with one unrelated failure in `tests/test_store_domains.py::test_invalid_domain_returns_field_error` (`401` instead of expected `400`), while the isolated test and module both passed. A second full-suite run timed out before completion. Treat this as existing cross-test/order sensitivity to investigate separately; no backend runtime logic was changed by this slice.
+- Backend full test note from Slice 16: first WSL full-suite run completed with one unrelated failure in `tests/test_store_domains.py::test_invalid_domain_returns_field_error` (`401` instead of expected `400`), while the isolated test and module both passed. A second full-suite run timed out before completion. This note is superseded by Slice 17, where the full PostgreSQL suite passed.
+
+## Completed Slice 17: PostgreSQL Test Isolation and FK Hardening
+
+Status: Complete on 2026-05-18
+
+Summary:
+- Stabilized the backend PostgreSQL validation path so it now matches SQLite's fresh-test isolation while still exercising real Postgres foreign-key enforcement.
+- Resolved the previous Postgres-only full-suite failures in admin roles, category deletion, variant/media cleanup, tier policy direct-session tests, variant observability tests, option-value deletion, security observability logging, and store-domain ordering.
+
+Backend:
+- Added PostgreSQL schema reset support in `PX-B/tests/conftest.py` before Alembic migrations run for `client` and `pg_session` fixtures.
+- Preserved pytest/application log capture across repeated Alembic migrations by configuring Alembic logging with `disable_existing_loggers=False`.
+- Made FK-sensitive catalog deletes explicit by flushing child-row deletions or detachments before deleting parent rows for variants, option values, and categories.
+- Updated direct-session Postgres tests to create real parent `User`, `Store`, and `Product` rows instead of relying on random UUIDs that SQLite accepted but Postgres correctly rejected.
+- Cleaned Alembic migration style issues flagged by Ruff without changing migration behavior.
+
+Frontend:
+- No runtime frontend changes were needed for this slice.
+
+Tests:
+- The full backend suite now passes under PostgreSQL with the requested command shape.
+- Full frontend tests and build gates were re-run to confirm the release-hardening slice did not disturb frontend contracts or i18n coverage.
+
+Important reasoning:
+- SQLite was hiding missing FK ordering and parent-row assumptions that Postgres enforced correctly.
+- Reusing a session-scoped Postgres container without resetting the schema caused cross-test data leakage; resetting the schema per migrated test fixture restores the isolation SQLite had by using a fresh database file.
+- Alembic's default logging configuration can disable existing loggers, which prevented security observability tests from seeing expected `caplog` records after repeated migrations.
+
+API, database, and schema changes:
+- No API path changes.
+- No new database migration.
+- No schema changes.
+- Existing migrations were style-cleaned only.
+
+Verification completed:
+- Backend PostgreSQL full suite: `PATH="$PWD/.venv/bin:$PATH" python -m dotenv -f .env.local.pg run -- pytest -v` passed (`248 passed`, `209 warnings`).
+- Backend lint: `.venv/bin/ruff check .` passed.
+- Backend typecheck: `.venv/bin/python -m mypy app` passed.
+- Frontend full tests: `npm test` passed (`303 passed`).
+- Frontend lint: `npm run lint` passed.
+- Frontend typecheck: `npm run typecheck` passed.
+- Frontend i18n check: `npm run i18n:check` passed for 10 locales.
+- Frontend production build: `npm run build` passed.
+
+Pending follow-up:
+- Archive-vs-delete migration strategy remains unresolved and should still be designed before changing variant retention semantics.
+- Browser-level admin setup -> generate -> publish -> storefront E2E coverage is still pending.
 
 ## Still Not Complete
 
