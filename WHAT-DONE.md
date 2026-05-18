@@ -684,3 +684,22 @@ Backend API, Schemas & Services:
 Tests and validation:
 - Updated E2E lifecycle tests in [`test_catalog_variants.py`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-B/tests/test_catalog_variants.py) to assert structured `archive_reason` returns.
 - Added comprehensive regression tests in `test_variant_audit_events_and_cleanup` validating audit event writing, 90-day draft retention, dependency checks, and clean physical deletions upon threshold expiration.
+
+## Completed Slice 22: Cleanup Endpoint Security
+
+Status: Complete on 2026-05-18
+
+Summary:
+- Fully secured the variant logical soft-delete cleanup endpoint (`/catalog/admin/variants/cleanup`) from unauthorized access.
+- Restructured the endpoint dependencies to enforce strict `super_admin` role validation using administrative auth policies.
+- Implemented standard Cross-Site Request Forgery (CSRF) protection using the `require_csrf` guard to secure database mutation operations.
+
+Backend API, Schemas & Services:
+- Secured `cleanup_archived_variants_endpoint` in [`router.py`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-B/app/modules/catalog/router.py) by adding `require_csrf` and `require_role("super_admin")` guards to its dependencies.
+
+Tests and validation:
+- Added comprehensive HTTP endpoint security tests in [`test_catalog_variants.py`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-B/tests/test_catalog_variants.py) under `test_cleanup_endpoint_security`.
+- Asserted that anonymous requests are denied with `401 Unauthorized`.
+- Asserted that regular authenticated users without the `super_admin` role are denied with `403 Forbidden` (`ADMIN_ACCESS_DENIED`).
+- Asserted that requests without CSRF verification are blocked with `403 Forbidden` regardless of role.
+- Asserted that requests from authenticated `super_admin` users with correct CSRF token pass successfully and return `200 OK` along with the count of deleted variants.
