@@ -580,3 +580,11 @@ The full multi-phase plan is not finished yet. Remaining major areas:
 - **Archive-vs-delete migration**: Initial variant lifecycle persistence and direct archive behavior are implemented; richer historical lookup/restore behavior remains future work.
 - **E2E coverage**: Storefront published snapshot visibility, template apply quota failures, and media rebinding after rebuild now have API-level regression coverage. Full browser-level admin/storefront workflows are still pending.
 - **Dead-code cleanup**: Final pass across both apps after all phases are complete.
+
+## Verified Current State (2026-05-18)
+
+- Backend PostgreSQL full suite command confirmed working:
+  `python -m dotenv -f .env.local.pg run -- pytest -v`
+- Ruff: clean
+- Mypy: clean
+- Next incremental focus: continue E2E coverage and targeted dead-code removal.
