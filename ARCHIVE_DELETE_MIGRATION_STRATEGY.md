@@ -355,35 +355,43 @@ def test_media_rebinding_after_rebuild():
 
 These invariants must hold true at all times. If future code violates them, it creates data corruption.
 
-**Invariant: Published snapshots must remain resolvable forever**
-- No hard delete of variants referenced by published snapshots
-- Snapshot references are immutable audit records
-- Violation: customer orders with variant references become dangling
+**1. Published snapshots are immutable forever.**
+- No hard delete of variants referenced by published snapshots.
+- Snapshot references are immutable audit records.
+- Violation: customer orders with variant references become dangling.
 
-**Invariant: Orders must resolve archived variants**
-- Archive state change must never break FK links
-- Archived variants remain queryable for order fulfillment, refunds, returns
-- Violation: impossible to process refunds or answer "what was in this order?"
+**2. Orders must always resolve archived variants.**
+- Archive state change must never break FK links.
+- Archived variants remain queryable for order fulfillment, refunds, and returns.
+- Violation: impossible to process refunds or answer "what was in this order?".
 
-**Invariant: Archiving must never mutate snapshot history**
-- Publishing a snapshot captures immutable state at that moment
-- Later archiving does not retroactively change published snapshots
-- Violation: audit trail becomes unreliable
+**3. Archiving must never mutate historical snapshots.**
+- Publishing a snapshot captures immutable state at that moment.
+- Later archiving does not retroactively change published snapshots.
+- Violation: audit trail becomes unreliable.
 
-**Invariant: SKU is a write-once identity**
-- Never reuse archived SKU for a new active variant
-- Reused SKU causes: analytics confusion, warehouse sync corruption, refund misrouting
-- Violation: "sku-123 refund" becomes ambiguous (old or new product?)
+**4. Restore must preserve original variant identity.**
+- Restoring a variant must reactivate the original record (preserving its UUID, SKU, and history) rather than cloning or creating a new record.
+- Violation: database integrity breaks, orphan records accumulate, and audit trails lose track of the entity's history.
 
-**Invariant: Archive state changes must be auditable**
-- Every archive/restore action logged with admin, timestamp, reason
-- Reason must be queryable for analytics/debugging (e.g., "OPTION_REMOVED", "MANUAL_ADMIN")
-- Violation: impossible to explain why variant disappeared
+**5. Cleanup must never delete referenced entities.**
+- The periodic cleanup task must never delete any variant that has active references to media, attributes, snapshots, or external domains.
+- Violation: breaks referential integrity and deletes valuable business history.
 
-**Invariant: Media detachment must precede variant archiving**
-- When a variant is archived, its media must be marked for rebinding
-- Don't leave orphan media expecting archived variants
-- Violation: media stays invisible until orphan cleanup runs
+**6. SKU is a write-once identity.**
+- Never reuse archived SKU for a new active variant.
+- Reused SKU causes: analytics confusion, warehouse sync corruption, refund misrouting.
+- Violation: "sku-123 refund" becomes ambiguous (old or new product?).
+
+**7. Archive state changes must be auditable.**
+- Every archive/restore action logged with admin, timestamp, reason.
+- Reason must be queryable for analytics/debugging (e.g., "OPTION_REMOVED", "MANUAL_ADMIN").
+- Violation: impossible to explain why a variant disappeared.
+
+**8. Media detachment must precede variant archiving.**
+- When a variant is archived, its media must be marked for rebinding.
+- Don't leave orphan media expecting archived variants.
+- Violation: media stays invisible until orphan cleanup runs.
 
 ---
 
