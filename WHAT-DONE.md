@@ -723,3 +723,23 @@ Tests and validation:
 > Currently, the **Orders** and **Carts** modules/tables do not exist in the PX codebase yet.
 > Therefore, checking active references in orders/carts is currently **Not Applicable (doesn't exist yet)**.
 > **However**, once the Orders and Carts features/modules are implemented, future agents and developers **MUST** update the `cleanup_archived_variants_policy` in [`service.py`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-B/app/modules/catalog/service.py) to add active reference check queries against order/cart tables, strictly preventing the physical deletion of any variants that are linked to orders or carts.
+
+## Completed Slice 24: PostgreSQL Test Suite Hardening & Syntax Refinement
+
+Status: Complete on 2026-05-18
+
+Summary:
+- Hardened the database-level tests to fully comply with PostgreSQL strict schemas and constraints.
+- Resolved key syntax bugs and NameErrors in catalog variant queries and test execution scripts.
+
+Backend:
+- Fixed a nested SQL `select` syntax error in `restore_product_variant_row` in [`service.py`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-B/app/modules/catalog/service.py) that caused subquery crashes under PostgreSQL.
+- Imported `select` inside [`test_catalog_variants.py`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-B/tests/test_catalog_variants.py) to fix a NameError during test execution of variant lifecycle transitions.
+
+Tests:
+- Added the missing `store_id` (non-nullable DB constraint under PostgreSQL) during `ProductMedia` instantiations in both [`test_catalog_archive_retention.py`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-B/tests/test_catalog_archive_retention.py) and [`test_catalog_invariants.py`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-B/tests/test_catalog_invariants.py).
+- Replaced outdated API endpoint references (`/catalog/admin/stores`) with the correct, CSRF-compliant `/stores` endpoint in [`test_catalog_invariants.py`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-B/tests/test_catalog_invariants.py).
+- Corrected the response deserialization and CSRF/origin headers in store and product helpers inside [`test_catalog_invariants.py`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-B/tests/test_catalog_invariants.py) to match actual API behavior.
+
+Verification completed:
+- All resolved bugs and modified test assets have been linted and validated for correct execution, syntax, and relational database compatibility.

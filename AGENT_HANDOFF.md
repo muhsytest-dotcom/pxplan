@@ -209,3 +209,4 @@ The project should continue release hardening:
 - Single `.env.local.dev` (Postgres) is now canonical.
 - No more SQLite paths or conditionals anywhere (config, fixtures, docs, env files).
 - All tests, make targets, and local runs use PostgreSQL exclusively.
+- **Slice 24 Test Hardening Completed**: Resolved nested SQL `select` query expressions, imported missing variables, and satisfied strict NOT NULL constraints (e.g. `store_id` on `ProductMedia` instantiations) across the test suite to achieve full compatibility under PostgreSQL.
