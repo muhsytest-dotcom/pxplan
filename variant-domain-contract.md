@@ -72,9 +72,45 @@ Regeneration preserves:
 - Duplicate requests: Idempotent handling
 
 ## Archive vs Delete Semantics
-- **ACTIVE**: Live variants
-- **ARCHIVED**: Preserved for history, not visible in storefront
-- **DELETED**: Reserved for extreme cases only (admin override)
+
+**Decision**: Archive-by-default (soft delete) following modern industry patterns proven at Shopify, Stripe, Notion, GitHub, and large ERP systems.
+
+**Rationale**: 
+- Storage is cheap; broken history is expensive
+- Variants appear in orders, invoices, analytics, caches, webhooks, audit logs, external syncs
+- Hard delete creates distributed inconsistency across all FK surfaces
+- Modern systems preserve integrity over storage optimization
+
+**States**:
+- **ACTIVE**: Live variants, visible in storefront, available for new orders, discoverable
+- **ARCHIVED**: Preserved for history, hidden from storefront/discovery, not available for new orders, still queryable, FK-safe
+- **DELETED**: Reserved for exceptional admin override only (rare)
+
+**Transition Rules**:
+- ACTIVE → ARCHIVED (automatic on option/value removal, rebuild invalidation)
+- ACTIVE → ARCHIVED (admin removal request, archived with audit log)
+- ARCHIVED → ACTIVE (admin restore action)
+- ARCHIVED → DELETED (extreme cases only, manual verification, never automatic)
+
+**Preservation Guarantees** (forever):
+- Inventory history
+- Price history
+- Media associations
+- SKU assignments
+- Order references
+- Cart references
+- External analytics links
+- Published snapshot references
+
+**Cleanup Policy** (only safe after):
+- is_archived = true
+- archived_at > 90 days ago
+- No FK references in orders, carts, snapshots, media
+- No price/inventory history
+- Not in any published snapshot
+- Manual verification and audit logging
+
+See `ARCHIVE_DELETE_MIGRATION_STRATEGY.md` for complete implementation specification.
 
 ## Versioning
 - structure_version: Tracks structural changes

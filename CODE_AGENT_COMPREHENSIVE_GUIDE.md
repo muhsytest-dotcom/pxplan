@@ -36,18 +36,34 @@ If this or any other document conflicts with live code plus the handoff, update 
 
 ### Slice A: Archive-vs-Delete Migration
 
-Goal: finalize and implement the variant retention strategy.
+**Status**: Decision finalized — See `ARCHIVE_DELETE_MIGRATION_STRATEGY.md` for complete specification.
 
-Required reasoning:
+Goal: implement the variant retention strategy following modern industry patterns.
+
+**Decision basis** (proven at Shopify, Stripe, Notion, GitHub):
 - Historical orders, carts, analytics, media, attributes, and external references must remain resolvable.
-- `ARCHIVED` variants should be excluded from active storefront discovery but remain queryable for history.
-- `DELETED` is reserved for exceptional admin override cases only.
+- Use logical (soft) deletion: `is_archived = true` instead of hard delete.
+- `ARCHIVED` variants excluded from storefront but remain queryable for history and FK safety.
+- `DELETED` reserved for exceptional admin override cases only (rare).
+- Storage is cheap; broken history is expensive.
 
-Expected work:
-- Audit current hard-delete paths in `PX-B/app/modules/catalog/service.py` and repository helpers.
-- Design a migration that preserves historical references.
-- Add focused backend tests for option/value removal, rebuild orphan handling, direct variant removal, media rebinding, and storefront filtering.
-- Avoid changing semantics until the migration plan is clear.
+**Required work**:
+1. Audit current hard-delete paths in `PX-B/app/modules/catalog/service.py` and repository helpers.
+2. Identify all FK surfaces (orders, carts, snapshots, media, tier policies, external syncs).
+3. Implement archive state in database migrations (add `is_archived`, `archived_at` fields).
+4. Update storefront queries to filter `WHERE is_archived = false`.
+5. Implement admin restore endpoint `/catalog/admin/variants/{id}/restore`.
+6. Add focused backend tests for:
+   - Option/value removal → archive affected variants
+   - Rebuild orphan handling → archive, not delete
+   - Direct variant removal → archive with audit log
+   - Media rebinding → preservation after archiving
+   - Storefront filtering → archived variants hidden but queryable
+   - Order resolution → still resolve archived variants
+7. Update published snapshot logic to preserve archived variants in snapshots.
+8. Update admin audit views to show archive/delete history.
+
+**Critical**: Read `ARCHIVE_DELETE_MIGRATION_STRATEGY.md` before making any deletion changes.
 
 ### Slice B: E2E/API Coverage
 

@@ -9,12 +9,13 @@ Use these first:
 - `WHAT-DONE.md`
 - `00_START_HERE.md`
 - `CODE_AGENT_COMPREHENSIVE_GUIDE.md`
+- **`ARCHIVE_DELETE_MIGRATION_STRATEGY.md`** ← Critical before any deletion changes
 - `QUICK_REFERENCE.md`
 - `DO_NOT_FORGET.md`
 
 ## Architecture References
 
-- `variant-domain-contract.md`
+- `variant-domain-contract.md` (includes archive semantics)
 - `technical-architecture-spec.md`
 - `VARIANTS_FEATURE_STRUCTURE.md`
 - `plan.md`

@@ -29,12 +29,13 @@ Completed:
 2. `WHAT-DONE.md`
 3. `CODE_AGENT_QUICKSTART.md`
 4. `CODE_AGENT_COMPREHENSIVE_GUIDE.md`
-5. `QUICK_REFERENCE.md`
-6. Relevant architecture references:
+5. **`ARCHIVE_DELETE_MIGRATION_STRATEGY.md`** ← Read before any deletion changes
+6. `QUICK_REFERENCE.md`
+7. Relevant architecture references:
    - `variant-domain-contract.md`
    - `technical-architecture-spec.md`
    - `VARIANTS_FEATURE_STRUCTURE.md`
-7. `DO_NOT_FORGET.md` before finishing
+8. `DO_NOT_FORGET.md` before finishing
 
 ## Source Of Truth
 
@@ -48,7 +49,7 @@ Use this priority when documents disagree:
 
 ## Current Work To Pick From
 
-- Archive-vs-delete migration strategy and implementation.
+- **Archive-vs-delete migration strategy and implementation** ← Decision finalized, see `ARCHIVE_DELETE_MIGRATION_STRATEGY.md`
 - Remaining E2E/API coverage:
   - template apply and quota failure;
   - media rebinding after rebuild;

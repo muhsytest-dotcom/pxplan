@@ -27,10 +27,26 @@ The old production blockers are complete through Slice 14. This checklist is for
 - [ ] Error envelopes keep `error.i18n_key` and `error.context`.
 - [ ] Tenant/store ownership checks remain in all admin paths.
 - [ ] Batched selection resolution is not replaced with N+1 lookups.
+- [ ] **Archive-by-default**: All variant deletion must use `is_archived = true`, not hard delete. See `ARCHIVE_DELETE_MIGRATION_STRATEGY.md` for complete specification. Never hard-delete variants linked to orders, snapshots, or media.
 
-## Current High-Risk Open Decision
+## Critical Archive-vs-Delete Rules
 
-Archive-vs-delete is unresolved. Do not expand hard-delete behavior for variants that may have historical references until the migration strategy is designed and documented.
+✅ **MUST DO**:
+- Convert all hard deletes to archive updates
+- Preserve variants with FK references forever
+- Add `archived_at` timestamps
+- Filter archived from storefront
+- Log all archive/delete actions with audit trail
+- Test that orders remain resolvable after archiving
+
+❌ **MUST NOT DO**:
+- Hard-delete variants referenced by orders
+- Cascade-delete variants from snapshots
+- Remove variants from published snapshots
+- Skip archive logging
+- Change deletion behavior without updating all FK surfaces
+
+See `ARCHIVE_DELETE_MIGRATION_STRATEGY.md` before making any deletion changes.
 
 ## Validation
 

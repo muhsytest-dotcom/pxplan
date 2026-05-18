@@ -68,9 +68,24 @@ Slice 18 focused on the unresolved archive-vs-delete direction without overreach
 
 The implementation intentionally keeps option/value deletion FK-clean. When an option value is deleted, affected variants are archived, but value links to that deleted row are removed before the value row is removed. Direct variant removal, where the option/value rows remain, preserves value links.
 
+## Archive-vs-Delete Decision: FINALIZED
+
+**Decision**: Adopt archive-by-default (soft delete) pattern following modern industry best practices (Shopify, Stripe, Notion, GitHub).
+
+**Strategy Document**: See `ARCHIVE_DELETE_MIGRATION_STRATEGY.md` for complete specification.
+
+**Key Points**:
+- Convert all hard deletes to `is_archived = true` updates
+- Preserve variants with FK references (orders, snapshots, media) forever
+- Archive variants when option values are removed, rebuilds invalidate them, or admins request deletion
+- Archive state filters variants from storefront/discovery but keeps them queryable for history
+- DELETED state reserved for exceptional admin override only
+- Cleanup policy: only safe to delete archived variants older than 90+ days with no FK references
+
 ## Pending Tasks
 
 Still pending from the broader plan:
+- **Implement Archive Migration**: Audit hard-delete paths, add `is_archived`/`archived_at` fields, update storefront queries, implement restore endpoint. (See `ARCHIVE_DELETE_MIGRATION_STRATEGY.md` Phase 1-4)
 - Richer historical view scoping if product requirements need order/cart reference views.
 - Broader browser-level E2E coverage for full admin setup -> generate -> publish -> storefront visibility.
 - Final dead-code cleanup after remaining design decisions settle.
@@ -81,7 +96,7 @@ Still pending from the broader plan:
 
 - The backend venv in this workspace is Linux-style. Ensure `.venv/bin` is on `PATH` when using the exact dotenv command shape, because `python -m dotenv -f .env.local.pg run -- pytest -v` otherwise may not find `pytest` in a non-activated shell.
 - Some historical notes in `WHAT-DONE.md` describe earlier blocker work as it existed at that time. Treat those as history, not current instructions.
-- Archive-vs-delete restoration and archived browsing are fully implemented. Avoid expanding hard-delete behavior for variants that may have historical references, preserving active-only uniqueness and FK-clean option/value deletion semantics.
+- Archive semantics are now decided (see `ARCHIVE_DELETE_MIGRATION_STRATEGY.md`). When implementing: preserve active-only uniqueness, maintain FK-clean deletion ordering for option/values, and always test that orders/snapshots remain resolvable after archiving.
 
 ## Important Files and Modules
 

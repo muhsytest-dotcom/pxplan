@@ -27,15 +27,16 @@ Completed:
 2. `WHAT-DONE.md`
 3. `00_START_HERE.md`
 4. `CODE_AGENT_COMPREHENSIVE_GUIDE.md`
-5. `QUICK_REFERENCE.md`
-6. `DO_NOT_FORGET.md` before finishing
+5. **`ARCHIVE_DELETE_MIGRATION_STRATEGY.md`** ← Required before any deletion changes
+6. `QUICK_REFERENCE.md`
+7. `DO_NOT_FORGET.md` before finishing
 
 Treat `AGENT_HANDOFF.md`, `WHAT-DONE.md`, and the live code as the source of truth when any older plan text conflicts.
 
 ## Recommended Next Work
 
 Pick one release-hardening slice:
-- Plan and implement archive-vs-delete migration for variants and historical references.
+- **Implement archive-vs-delete migration** ← See `ARCHIVE_DELETE_MIGRATION_STRATEGY.md` (decision finalized)
 - Add remaining E2E/API coverage for template quota failures, media rebinding after rebuild, and full browser admin-to-storefront flows.
 - Clean stale/dead code after the archive strategy is decided.
 - Add optional deeper observability such as alert policies, health views, reconnect metrics, and drilldowns.

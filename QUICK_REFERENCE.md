@@ -76,6 +76,7 @@ npm run build
 - Batched selection loading in list endpoints.
 - SSE status-only behavior.
 - Explicit publish; generation jobs must not silently publish.
+- **Archive-by-default pattern**: Convert all hard deletes to `is_archived = true`. See `ARCHIVE_DELETE_MIGRATION_STRATEGY.md` for the complete decision. Never hard-delete variants with FK references (orders, snapshots, media).
 
 ## Documentation Finish
 
