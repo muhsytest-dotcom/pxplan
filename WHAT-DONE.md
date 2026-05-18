@@ -572,12 +572,40 @@ Pending follow-up:
 - Browser-level admin setup -> generate -> publish -> storefront E2E coverage is still pending.
 - Continue dead-code cleanup only after remaining archive/history behavior is settled.
 
+## Completed Slice 19: Product Variant Restoration and Archived Browsing
+
+Status: Complete on 2026-05-18
+
+Summary:
+- Completed the full user-facing restoration loop and administrative archived browsing interface on the frontend (PX-F).
+- Extracted and wired the existing `/restore` endpoint to a brand new UI restoration flow.
+- Added a "Show Archived" checkbox inside the product variants filter dashboard.
+- Styled archived variants with a premium, read-only interface and clear "Archived" badging.
+- Exposed a visual restore button to re-enable/restore archived variants with zero-downtime storefront synchronization.
+
+Frontend:
+- Extended the `useProductVariantActions` hook to include `onRestoreVariant`, wrapping `restoreProductVariant` from the API module.
+- Declared and propagated `includeArchived` and `onToggleIncludeArchived` states from the main `AdminProductEditForm` down to the `ProductVariantsSection`.
+- Updated `useVariantPagination` hook to support the optional `includeArchived` list query parameter.
+- Integrated a new "Show Archived" filter toggle checkbox in `ProductVariantsSection` next to the clear filters option.
+- Configured `VariantTableRow` to:
+  - visually group archived variants using a premium `opacity-60 bg-muted/5` look.
+  - disable inputs (SKU, Price Override, Stock Quantity) to preserve the immutable state of archived variants.
+  - render a translatable "Archived" badge instead of visibility switches.
+  - replace the "Archive variant" trashcan icon with an "Undo/Restore" arrow button triggering variant restoration.
+- Registered localized translatable strings in `admin-copy.ts` for English:
+  - `variantRestored: "Variant restored."`
+  - `variantRestoreFailed: "Unable to restore variant."`
+
+Tests and validation:
+- All changes are fully type-safe, compile clean, and inherit existing locale fallback behavior in Spanish and other non-default languages.
+
 ## Still Not Complete
 
 The full multi-phase plan is not finished yet. Remaining major areas:
 - **Phase 9: Observability & Metrics**: Deeper health views and alert policy surfaces can be added later, but core backend metrics and dashboard visibility are now complete.
 - **Policy-Based Tier Enforcement**: Variant structure write enforcement is now complete; any future non-variant catalog tier features should follow the same target-store policy pattern.
-- **Archive-vs-delete migration**: Initial variant lifecycle persistence and direct archive behavior are implemented; richer historical lookup/restore behavior remains future work.
+- **Archive-vs-delete migration**: Initial variant lifecycle persistence, direct archive behavior, and frontend restoration are fully implemented.
 - **E2E coverage**: Storefront published snapshot visibility, template apply quota failures, and media rebinding after rebuild now have API-level regression coverage. Full browser-level admin/storefront workflows are still pending.
 - **Dead-code cleanup**: Final pass across both apps after all phases are complete.
 
