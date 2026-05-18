@@ -6,7 +6,7 @@ Read this first, then `00_START_HERE.md`, `WHAT-DONE.md`, and the architecture d
 
 ## Latest Implementation Status
 
-The variants stabilization work is complete through Slice 17.
+The variants stabilization work is complete through Slice 18.
 
 Completed:
 - Core variant domain foundation and canonical identity.
@@ -23,6 +23,7 @@ Completed:
 - API-level regression coverage for template quota failures and rebuild media rebinding.
 - Frontend admin workflow for explicitly publishing generated product structure snapshots to storefront.
 - PostgreSQL backend test isolation and FK-ordering hardening, with the full Postgres suite passing.
+- Product variant lifecycle persistence and direct archive-on-remove behavior, with active-only variant uniqueness.
 
 Current quality gate from the latest slice:
 - Backend PostgreSQL full suite passed: `PATH="$PWD/.venv/bin:$PATH" python -m dotenv -f .env.local.pg run -- pytest -v` (`248 passed`, `209 warnings`).
@@ -36,13 +37,14 @@ Current quality gate from the latest slice:
 
 ## Summary of Latest Completed Work
 
-Slice 17 stabilized PostgreSQL backend validation and refreshed the full project gates:
-- Added PostgreSQL schema reset support in `PX-B/tests/conftest.py` before running Alembic migrations for migrated test fixtures.
-- Preserved pytest/application log capture during repeated Alembic migrations by setting `disable_existing_loggers=False` in `PX-B/alembic/env.py`.
-- Made FK-sensitive catalog deletes explicit by flushing child deletes/detachments before parent deletes for variants, option values, and categories.
-- Updated direct-session Postgres tests to seed real parent `User`, `Store`, and `Product` rows where real foreign keys require them.
-- Cleaned Ruff style issues in existing Alembic migration files.
-- Confirmed the previous full-suite store-domain/order-sensitivity note is no longer reproducing under the full PostgreSQL run.
+Slice 18 implemented the first archive-vs-delete migration slice:
+- Added persisted `ProductVariant.lifecycle_status` with `active`, `archived`, and `deleted` lifecycle values.
+- Added Alembic migration `d4f2a9b7c801_add_product_variant_lifecycle_status.py`.
+- Replaced all-row product variant SKU/combination uniqueness with active-only unique indexes so archived rows can remain historical without blocking active replacements.
+- Updated direct admin variant removal to archive rows, mark them inactive, hide them from normal listings, and keep media rebinding behavior.
+- Kept option/value deletion FK-clean by removing value links when the option/value row itself is deleted.
+- Added `lifecycle_status` to backend/frontend variant read contracts and adjusted default admin copy to describe archiving.
+- Added regression coverage proving archived variants are retained, hidden from normal discovery, and can be replaced by a new active row.
 
 ## Current Architecture Decisions
 
@@ -51,6 +53,8 @@ Slice 17 stabilized PostgreSQL backend validation and refreshed the full project
 - **Publication remains explicit**: Generation jobs create snapshots but do not publish them. Admins publish the chosen snapshot through the explicit publish endpoint.
 - **Frontend publish visibility is version-driven**: The publish panel appears only when the latest generated snapshot version is newer than the product's published version.
 - **Target-store policy wins**: Template application and structure copy must enforce the destination product/store tier, not the source/template origin.
+- **Variant removal archives by default**: Direct admin variant removal should set `lifecycle_status = archived` and `is_active = false`, not hard-delete the row.
+- **Active-only uniqueness owns current catalog identity**: Variant SKU and combination uniqueness applies to active lifecycle rows so archived historical rows do not block replacement variants.
 - **Quota errors stay translatable at API boundaries**: Template quota failures must preserve the `AppException` envelope with `error.i18n_key` and interpolation `context`.
 - **Rebuild media rebinding remains visible**: Full rebuilds that remove old variants must detach affected media and mark it for rebinding so admins can reconnect media to generated variants.
 - **Block invalid structures early**: Public structure writes should refuse projected over-quota matrices before the user reaches rebuild/job execution.
@@ -59,16 +63,14 @@ Slice 17 stabilized PostgreSQL backend validation and refreshed the full project
 
 ## Important Reasoning Behind Changes
 
-Slice 17 focused on making the PostgreSQL validation path trustworthy. SQLite was allowing random-parent fixture data and less strict FK timing to pass; Postgres correctly rejected it. The test harness now resets the reused Postgres container schema before migrations, and FK-sensitive service deletes flush child mutations before deleting parent records.
+Slice 18 focused on the unresolved archive-vs-delete direction without overreaching into archive browsing or restore UX. Persisting lifecycle state and active-only uniqueness gives the domain a safe foundation: archived variants are retained for future history/reference views while normal admin and storefront discovery continue to show only active lifecycle rows.
 
-The implementation intentionally avoids runtime API or schema changes. It hardens test isolation, delete ordering, and validation fidelity while preserving the existing published-snapshot and explicit-publication contracts.
-
-The archive-vs-delete migration remains higher risk and was not changed in this slice.
+The implementation intentionally keeps option/value deletion FK-clean. When an option value is deleted, affected variants are archived, but value links to that deleted row are removed before the value row is removed. Direct variant removal, where the option/value rows remain, preserves value links.
 
 ## Pending Tasks
 
 Still pending from the broader plan:
-- Final archive-vs-delete migration strategy for variants and historical references.
+- Richer archive/history behavior if product requirements need archive browsing, restore, or order/cart reference views.
 - Broader browser-level E2E coverage for full admin setup -> generate -> publish -> storefront visibility.
 - Final dead-code cleanup after remaining design decisions settle.
 - Optional deeper observability: alert policy surfaces, health views, reconnect metrics, and operational drilldowns.
@@ -78,12 +80,14 @@ Still pending from the broader plan:
 
 - The backend venv in this workspace is Linux-style. Ensure `.venv/bin` is on `PATH` when using the exact dotenv command shape, because `python -m dotenv -f .env.local.pg run -- pytest -v` otherwise may not find `pytest` in a non-activated shell.
 - Some historical notes in `WHAT-DONE.md` describe earlier blocker work as it existed at that time. Treat those as history, not current instructions.
-- Archive-vs-delete is still a real product/domain decision. Avoid hard-deleting historical variants further until that migration strategy is finalized.
+- Archive-vs-delete has an initial implementation for direct variant removal. Avoid expanding hard-delete behavior or adding restore/archive browsing without preserving active-only uniqueness and FK-clean option/value deletion semantics.
 
 ## Important Files and Modules
 
 Backend:
 - `PX-B/app/modules/catalog/service.py`: Core variant business logic, snapshots, jobs, quota enforcement, selection resolution, and FK-sensitive delete ordering.
+- `PX-B/app/modules/catalog/models.py`: Product variant lifecycle status and active-only uniqueness indexes.
+- `PX-B/app/modules/catalog/repository.py`: Variant listing/count/occupancy helpers default to active lifecycle rows.
 - `PX-B/app/modules/catalog/router.py`: Catalog admin/storefront API routes; Slice 16 only changed the metrics route query annotation for Ruff compliance.
 - `PX-B/app/modules/catalog/variant_domain.py`: Shared domain constants and canonical identity helpers.
 - `PX-B/app/modules/catalog/variant_events.py`: Durable SSE event bus.
@@ -93,11 +97,12 @@ Backend:
 - `PX-B/app/core/rate_limit/policies.py`: Rate-limit policy registry.
 - `PX-B/tests/conftest.py`: SQLite/PostgreSQL test harness and schema isolation.
 - `PX-B/alembic/env.py`: Alembic migration environment and logging setup.
+- `PX-B/alembic/versions/d4f2a9b7c801_add_product_variant_lifecycle_status.py`: Product variant lifecycle migration.
 
 Frontend:
 - `PX-F/lib/catalog/api.ts`: Catalog API client, now includes structure snapshot list/publish methods.
-- `PX-F/lib/catalog/types.ts`: Frontend contract types, now includes snapshot/published version fields and `CatalogProductStructureSnapshotRead`.
-- `PX-F/lib/catalog/admin-copy.ts`: Catalog admin UI copy, now includes snapshot publish keys.
+- `PX-F/lib/catalog/types.ts`: Frontend contract types, now includes snapshot/published version fields, `CatalogProductStructureSnapshotRead`, and optional variant `lifecycle_status`.
+- `PX-F/lib/catalog/admin-copy.ts`: Catalog admin UI copy, including snapshot publish keys and archive-oriented default variant removal copy.
 - `PX-F/lib/catalog/i18n.ts`: Catalog error-key translation.
 - `PX-F/lib/catalog/variant-job-events.ts`: Variant job SSE helpers.
 - `PX-F/app/components/admin-product-edit-form.tsx`: Product edit orchestration and snapshot publish wiring.
@@ -120,9 +125,12 @@ Tests:
 
 Latest slice:
 - No API path changes.
-- No new database migration.
-- No schema changes.
-- Existing Alembic migration files received style-only Ruff cleanup.
+- Added `product_variants.lifecycle_status`, defaulting existing rows to `active`.
+- Added active-only product variant unique indexes:
+  - `uq_product_variants_active_product_combination_version`
+  - `uq_product_variants_active_product_sku_version`
+- Dropped the previous all-row `product_id + combination_key + version` and `product_id + sku + version` unique constraints.
+- `ProductVariantRead` now includes `lifecycle_status`.
 
 Previous Slice 16:
 - Frontend API client calls existing backend endpoints:
@@ -139,8 +147,8 @@ Earlier completed work added job error tracking fields, durable variant job even
 
 The project should continue release hardening:
 - Add browser-level E2E coverage for admin setup -> generate -> publish -> storefront visibility.
-- Decide and implement archive-vs-delete migration.
-- Clean stale/dead code after archive semantics settle.
+- Extend archive/history behavior only where product requirements need explicit archive browsing, restore, or historical reference views.
+- Clean stale/dead code after archive/history semantics settle.
 - Keep quality gates explicit, and run backend gates against PostgreSQL for backend changes.
 
 ## Assumptions Made
@@ -151,12 +159,14 @@ The project should continue release hardening:
 - Legacy/imported over-quota structures may still exist and must remain safely blocked at preview/job time.
 - Snapshot publication remains explicit through `/catalog/admin/products/{product_id}/snapshots/{snapshot_id}/publish`; generation jobs do not auto-publish.
 - The admin publish panel should be hidden unless a generated snapshot version is newer than the currently published storefront version.
+- Direct variant removal archives the variant and hides it from default discovery; option/value deletion archives affected variants but removes value links to deleted rows for FK safety.
+- Product variant SKU/combination uniqueness is active-only; archived rows must not block active replacement rows.
 
 ## Recommended Next Steps
 
 1. Add browser-level E2E coverage for the complete admin generate/publish/storefront flow.
-2. Plan the archive-vs-delete migration carefully before touching variant deletion semantics.
-3. Continue final dead-code cleanup only after archive semantics are decided.
+2. Add explicit archive/history admin or restore workflows only after product requirements define how archived variants should be surfaced.
+3. Continue final dead-code cleanup only after archive/history semantics are settled.
 4. Keep plan/checklist docs current when Slices 16+ land.
 5. Run full frontend gates and PostgreSQL backend gates after every implementation slice.
 
@@ -164,7 +174,9 @@ The project should continue release hardening:
 
 - Do not bypass `assert_no_active_job` for structure mutations.
 - Do not remove rebuild/job quota checks; they protect legacy/imported data.
-- Do not hard-delete variants that may have historical references without the archive migration plan.
+- Do not hard-delete variants that may have historical references; direct variant removal archives them.
+- Do not remove active-only variant uniqueness; archived rows must not block replacement active variants.
+- Do not preserve variant value links when deleting the option/value row itself; that path must remain FK-clean.
 - Do not make storefront structure read live draft options when a published snapshot exists.
 - Do not make storefront variants ignore `product.published_version`.
 - Do not auto-publish generated snapshots.

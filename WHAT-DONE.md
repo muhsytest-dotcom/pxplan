@@ -514,11 +514,69 @@ Pending follow-up:
 - Archive-vs-delete migration strategy remains unresolved and should still be designed before changing variant retention semantics.
 - Browser-level admin setup -> generate -> publish -> storefront E2E coverage is still pending.
 
+## Completed Slice 18: Product Variant Archive Lifecycle
+
+Status: Complete on 2026-05-18
+
+Summary:
+- Implemented the first archive-vs-delete migration slice for product variants.
+- Direct admin variant removal now archives the variant row instead of hard-deleting it, hides it from normal admin/storefront listings, and still detaches media for rebinding.
+- Active variant uniqueness now applies only to active lifecycle rows, allowing a new active variant to reuse the SKU and combination of an archived historical row.
+
+Backend:
+- Added `ProductVariantLifecycleStatus` and `ProductVariant.lifecycle_status`.
+- Added Alembic migration `d4f2a9b7c801_add_product_variant_lifecycle_status.py`.
+- Replaced all-row variant SKU/combination unique constraints with active-only partial unique indexes for PostgreSQL and matching SQLModel indexes for SQLite tests.
+- Updated variant listing, occupancy, and count helpers to exclude archived variants by default while allowing explicit archived inclusion where product hard-delete cleanup needs it.
+- Updated `delete_product_variant_row` to archive direct variant removals, mark archived variants inactive, and keep media rebinding behavior.
+- Preserved option/value delete FK safety by detaching value links when the option/value itself is removed.
+- Added `lifecycle_status` to backend variant read responses.
+
+Frontend:
+- Added optional `lifecycle_status` to `ProductVariantRead`.
+- Updated admin variant removal copy in the default catalog copy to say archive rather than hard delete.
+- Updated rebuild copy to describe archiving current variants before matrix recreation.
+
+Tests:
+- Updated the direct variant removal regression to assert the row is archived, hidden from the normal variants list, media is detached for rebinding, and an active replacement can reuse the archived row's SKU/combination.
+- Re-ran option-value deletion and rebuild regressions to protect FK-sensitive paths touched by archive behavior.
+
+Important reasoning:
+- This slice does not introduce broad historical order/cart lookup APIs; it establishes the persisted lifecycle and active-only uniqueness foundation those future history views need.
+- Normal admin and storefront discovery should continue to behave as before by showing only active lifecycle variants.
+- Product hard-delete cleanup must include archived variants so tenant/product deletion remains FK-clean.
+- Option/value deletion cannot preserve value links to deleted values, so it archives affected variants but still removes those links before deleting the value row.
+
+API, database, and schema changes:
+- Added `product_variants.lifecycle_status`, defaulting existing rows to `active`.
+- Replaced product variant uniqueness with active-only unique indexes:
+  - `uq_product_variants_active_product_combination_version`
+  - `uq_product_variants_active_product_sku_version`
+- `ProductVariantRead` now includes `lifecycle_status`.
+- No API path changes.
+
+Verification completed:
+- Backend focused tests: `.venv/bin/python -m pytest tests/test_catalog_variants.py::test_delete_variant_archives_variant_and_detaches_media tests/test_catalog_variants.py::test_delete_option_value_removes_translations_and_affected_variants tests/test_catalog_variants.py::test_rebuild_variants_recreates_full_matrix_transactionally -q` passed.
+- Backend PostgreSQL full suite: `PATH="$PWD/.venv/bin:$PATH" python -m dotenv -f .env.local.pg run -- pytest -v` passed (`248 passed`, `209 warnings`).
+- Backend lint: `.venv/bin/ruff check .` passed.
+- Backend typecheck: `.venv/bin/python -m mypy app` passed.
+- Frontend focused tests: `npm test -- lib/catalog/__tests__/api.test.ts app/components/product-editor/__tests__/product-variants-section.test.tsx` passed (`39 passed`).
+- Frontend full tests: `npm test` passed (`303 passed`).
+- Frontend lint: `npm run lint` passed.
+- Frontend typecheck: `npm run typecheck` passed.
+- Frontend i18n check: `npm run i18n:check` passed for 10 locales.
+- Frontend production build: `npm run build` passed.
+
+Pending follow-up:
+- Extend archive semantics to richer historical lookup/admin archive views if product requirements need explicit archive browsing or restore.
+- Browser-level admin setup -> generate -> publish -> storefront E2E coverage is still pending.
+- Continue dead-code cleanup only after remaining archive/history behavior is settled.
+
 ## Still Not Complete
 
 The full multi-phase plan is not finished yet. Remaining major areas:
 - **Phase 9: Observability & Metrics**: Deeper health views and alert policy surfaces can be added later, but core backend metrics and dashboard visibility are now complete.
 - **Policy-Based Tier Enforcement**: Variant structure write enforcement is now complete; any future non-variant catalog tier features should follow the same target-store policy pattern.
-- **Archive-vs-delete migration**: Finalizing the strategy for existing variants and historical references.
+- **Archive-vs-delete migration**: Initial variant lifecycle persistence and direct archive behavior are implemented; richer historical lookup/restore behavior remains future work.
 - **E2E coverage**: Storefront published snapshot visibility, template apply quota failures, and media rebinding after rebuild now have API-level regression coverage. Full browser-level admin/storefront workflows are still pending.
 - **Dead-code cleanup**: Final pass across both apps after all phases are complete.
