@@ -602,6 +602,7 @@ Tests and validation:
   - "Show Archived" checkbox rendering and click interactions.
   - Locked inputs, translatable "Archived" badge, and restore action triggers on archived variant rows.
 - Added integration tests in `admin-product-edit-form.test.tsx` mocking `restoreProductVariant` and verifying correct API calling parameters and toast notifications upon successful variant recovery.
+- Fixed a logic flaw in the backend pytest suite `test_restore_variant_and_conflict_handling` where the conflicting SKU variant creation attempted to reuse an existing active option value combination. Introduced a third unique option value (`"Blue"`) so the conflicting variant is actually created, causing variant restoration to correctly fail with `409 Conflict` (DUPLICATE_SKU) as asserted.
 - All changes are fully type-safe, compile clean, and inherit existing locale fallback behavior in Spanish and other non-default languages.
 
 ## Still Not Complete
