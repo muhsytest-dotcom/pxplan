@@ -598,6 +598,10 @@ Frontend:
   - `variantRestoreFailed: "Unable to restore variant."`
 
 Tests and validation:
+- Added unit and integration tests in `product-variants-section.test.tsx` verifying:
+  - "Show Archived" checkbox rendering and click interactions.
+  - Locked inputs, translatable "Archived" badge, and restore action triggers on archived variant rows.
+- Added integration tests in `admin-product-edit-form.test.tsx` mocking `restoreProductVariant` and verifying correct API calling parameters and toast notifications upon successful variant recovery.
 - All changes are fully type-safe, compile clean, and inherit existing locale fallback behavior in Spanish and other non-default languages.
 
 ## Still Not Complete

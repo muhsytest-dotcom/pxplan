@@ -6,7 +6,7 @@ Read this first, then `00_START_HERE.md`, `WHAT-DONE.md`, and the architecture d
 
 ## Latest Implementation Status
 
-The variants stabilization work is complete through Slice 18.
+The variants stabilization work is complete through Slice 19.
 
 Completed:
 - Core variant domain foundation and canonical identity.
@@ -24,12 +24,13 @@ Completed:
 - Frontend admin workflow for explicitly publishing generated product structure snapshots to storefront.
 - PostgreSQL backend test isolation and FK-ordering hardening, with the full Postgres suite passing.
 - Product variant lifecycle persistence and direct archive-on-remove behavior, with active-only variant uniqueness.
+- Frontend user-facing variant restoration loop, archived browsing controls, and read-only styling with "Archived" badge and "Restore" button.
 
 Current quality gate from the latest slice:
 - Backend PostgreSQL full suite passed: `PATH="$PWD/.venv/bin:$PATH" python -m dotenv -f .env.local.pg run -- pytest -v` (`248 passed`, `209 warnings`).
 - Backend Ruff passed: `.venv/bin/ruff check .`.
 - Backend mypy passed: `.venv/bin/python -m mypy app`.
-- Frontend full tests passed: `npm test` (`303 passed`).
+- Frontend full tests passed: `npm test` (`305 passed`).
 - Frontend lint passed: `npm run lint`.
 - Frontend typecheck passed: `npm run typecheck`.
 - Frontend i18n check passed: `npm run i18n:check` for 10 locales.
@@ -37,14 +38,14 @@ Current quality gate from the latest slice:
 
 ## Summary of Latest Completed Work
 
-Slice 18 implemented the first archive-vs-delete migration slice:
-- Added persisted `ProductVariant.lifecycle_status` with `active`, `archived`, and `deleted` lifecycle values.
-- Added Alembic migration `d4f2a9b7c801_add_product_variant_lifecycle_status.py`.
-- Replaced all-row product variant SKU/combination uniqueness with active-only unique indexes so archived rows can remain historical without blocking active replacements.
-- Updated direct admin variant removal to archive rows, mark them inactive, hide them from normal listings, and keep media rebinding behavior.
-- Kept option/value deletion FK-clean by removing value links when the option/value row itself is deleted.
-- Added `lifecycle_status` to backend/frontend variant read contracts and adjusted default admin copy to describe archiving.
-- Added regression coverage proving archived variants are retained, hidden from normal discovery, and can be replaced by a new active row.
+Slice 19 completed the end-to-end admin-facing variant restoration and archived browsing flow:
+- Added a new `"Show Archived"` toggle filter checkbox next to the clear filters option in `ProductVariantsSection`.
+- Styled archived variant rows with a premium `opacity-60 bg-muted/5` look and disabled all variant inputs (SKU, Price, Stock) to represent their read-only archived state.
+- Displayed a localized `"Archived"` badge in the visibility column instead of standard active/hidden buttons.
+- Substituted the trashcan archive action button with a beautiful `"Restore/Undo"` action button calling `onRestoreVariant`.
+- Extended the `useProductVariantActions` hook to support `onRestoreVariant`, wrapping `restoreProductVariant` from the API client.
+- Propagated states (`includeArchived`, `onToggleIncludeArchived`) from `AdminProductEditForm` down to components and wired `useVariantPagination` to include `{ includeArchived }` in parameters.
+- Added comprehensive unit and integration tests covering filters, row rendering, inputs locking, badge visibility, and restoration trigger calls.
 
 ## Current Architecture Decisions
 
@@ -70,7 +71,7 @@ The implementation intentionally keeps option/value deletion FK-clean. When an o
 ## Pending Tasks
 
 Still pending from the broader plan:
-- Richer archive/history behavior if product requirements need archive browsing, restore, or order/cart reference views.
+- Richer historical view scoping if product requirements need order/cart reference views.
 - Broader browser-level E2E coverage for full admin setup -> generate -> publish -> storefront visibility.
 - Final dead-code cleanup after remaining design decisions settle.
 - Optional deeper observability: alert policy surfaces, health views, reconnect metrics, and operational drilldowns.
@@ -80,7 +81,7 @@ Still pending from the broader plan:
 
 - The backend venv in this workspace is Linux-style. Ensure `.venv/bin` is on `PATH` when using the exact dotenv command shape, because `python -m dotenv -f .env.local.pg run -- pytest -v` otherwise may not find `pytest` in a non-activated shell.
 - Some historical notes in `WHAT-DONE.md` describe earlier blocker work as it existed at that time. Treat those as history, not current instructions.
-- Archive-vs-delete has an initial implementation for direct variant removal. Avoid expanding hard-delete behavior or adding restore/archive browsing without preserving active-only uniqueness and FK-clean option/value deletion semantics.
+- Archive-vs-delete restoration and archived browsing are fully implemented. Avoid expanding hard-delete behavior for variants that may have historical references, preserving active-only uniqueness and FK-clean option/value deletion semantics.
 
 ## Important Files and Modules
 
