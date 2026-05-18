@@ -703,3 +703,17 @@ Tests and validation:
 - Asserted that regular authenticated users without the `super_admin` role are denied with `403 Forbidden` (`ADMIN_ACCESS_DENIED`).
 - Asserted that requests without CSRF verification are blocked with `403 Forbidden` regardless of role.
 - Asserted that requests from authenticated `super_admin` users with correct CSRF token pass successfully and return `200 OK` along with the count of deleted variants.
+
+## Completed Slice 23: Dedicated Soft-Delete & Cleanup Policy Tests
+
+Status: Complete on 2026-05-18
+
+Summary:
+- Built a dedicated test suite verifying new soft-deletion features: `archive_reason`, `VariantAuditEvent` (audit logging), and the physical variant cleanup task.
+- Ensured all edge cases of the periodic 90-day cleanup policy (including active dependency blocking) are strictly protected.
+
+Tests and validation:
+- Added a brand new, isolated test suite in [`test_catalog_archive_retention.py`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-B/tests/test_catalog_archive_retention.py) with the following dedicated test cases:
+  - `test_variant_archive_reason_persistence`: Verifies that custom `archive_reason` values are persisted cleanly upon archiving and reset to `None` on restoration.
+  - `test_variant_audit_event_logging`: Verifies that structured `VariantAuditEvent` entries are recorded automatically for both archiving and restoring, logging the correct action, reason, target product, and UUID parameters.
+  - `test_cleanup_policy_dependency_guards`: Verifies that the cleanup task (`cleanup_archived_variants_policy`) safely blocks the physical deletion of expired archived variants if they possess active media or attribute value references, and executes physical deletion only when references are cleaned.
