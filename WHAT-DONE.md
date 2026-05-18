@@ -710,10 +710,16 @@ Status: Complete on 2026-05-18
 
 Summary:
 - Built a dedicated test suite verifying new soft-deletion features: `archive_reason`, `VariantAuditEvent` (audit logging), and the physical variant cleanup task.
-- Ensured all edge cases of the periodic 90-day cleanup policy (including active dependency blocking) are strictly protected.
+- Ensured all edge cases of the periodic 90-day cleanup policy (including active dependency blocking and immutable published snapshot protection) are strictly protected.
 
 Tests and validation:
 - Added a brand new, isolated test suite in [`test_catalog_archive_retention.py`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-B/tests/test_catalog_archive_retention.py) with the following dedicated test cases:
   - `test_variant_archive_reason_persistence`: Verifies that custom `archive_reason` values are persisted cleanly upon archiving and reset to `None` on restoration.
   - `test_variant_audit_event_logging`: Verifies that structured `VariantAuditEvent` entries are recorded automatically for both archiving and restoring, logging the correct action, reason, target product, and UUID parameters.
-  - `test_cleanup_policy_dependency_guards`: Verifies that the cleanup task (`cleanup_archived_variants_policy`) safely blocks the physical deletion of expired archived variants if they possess active media or attribute value references, and executes physical deletion only when references are cleaned.
+  - `test_cleanup_policy_dependency_guards`: Verifies that the cleanup task (`cleanup_archived_variants_policy`) safely blocks the physical deletion of expired archived variants if they possess active media references, attribute value references, or are linked to any immutable storefront published snapshots (`variant.version <= product.published_version`). Executes physical deletion only when all references are successfully cleared and the variant is no longer part of any published storefront version.
+
+> [!IMPORTANT]
+> **CRITICAL ARCHITECTURAL REQUIREMENT FOR FUTURE AGENTS / DEVELOPERS:**
+> Currently, the **Orders** and **Carts** modules/tables do not exist in the PX codebase yet.
+> Therefore, checking active references in orders/carts is currently **Not Applicable (doesn't exist yet)**.
+> **However**, once the Orders and Carts features/modules are implemented, future agents and developers **MUST** update the `cleanup_archived_variants_policy` in [`service.py`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-B/app/modules/catalog/service.py) to add active reference check queries against order/cart tables, strictly preventing the physical deletion of any variants that are linked to orders or carts.

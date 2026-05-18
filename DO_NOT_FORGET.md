@@ -40,7 +40,7 @@ The old production blockers are complete through Slice 14. This checklist is for
 - Test that orders remain resolvable after archiving
 
 ❌ **MUST NOT DO**:
-- Hard-delete variants referenced by orders
+- Hard-delete variants referenced by orders (Note: Orders & Carts do not exist in the codebase yet; when built, the cleanup policy MUST be updated immediately to block deletion of variants referenced in them)
 - Cascade-delete variants from snapshots
 - Remove variants from published snapshots
 - Skip archive logging

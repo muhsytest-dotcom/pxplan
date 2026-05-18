@@ -80,7 +80,7 @@ The implementation intentionally keeps option/value deletion FK-clean. When an o
 - Archive variants when option values are removed, rebuilds invalidate them, or admins request deletion
 - Archive state filters variants from storefront/discovery but keeps them queryable for history
 - DELETED state reserved for exceptional admin override only
-- Cleanup policy: only safe to delete archived variants older than 90+ days with no FK references
+- Cleanup policy: only safe to delete archived variants older than 90+ days with no FK references (Note: Orders & Carts do not exist in the codebase yet; when built, the cleanup policy MUST be updated immediately to block deletion of variants referenced in them)
 
 ## Pending Tasks
 
@@ -155,7 +155,7 @@ Previous Slice 16:
 - Frontend type contracts expose `ProductRead.snapshot_version`, `ProductRead.published_version`, `CatalogVariantJobRead.snapshot_id`, and `CatalogProductStructureSnapshotRead`.
 - No backend API path changes.
 - No database migration.
-- No backend schema changes.
+- No database schema changes.
 
 Earlier completed work added job error tracking fields, durable variant job events, snapshots, metrics response types, and rate-limit policies. See `WHAT-DONE.md` for slice-by-slice details.
 
@@ -191,6 +191,7 @@ The project should continue release hardening:
 - Do not bypass `assert_no_active_job` for structure mutations.
 - Do not remove rebuild/job quota checks; they protect legacy/imported data.
 - Do not hard-delete variants that may have historical references; direct variant removal archives them.
+- Once Orders/Carts are built in the future, do not forget to update the physical cleanup policy to query and protect variants linked to them (Orders & Carts do not exist in the codebase yet).
 - Do not remove active-only variant uniqueness; archived rows must not block replacement active variants.
 - Do not preserve variant value links when deleting the option/value row itself; that path must remain FK-clean.
 - Do not make storefront structure read live draft options when a published snapshot exists.
