@@ -605,12 +605,37 @@ Tests and validation:
 - Fixed a logic flaw in the backend pytest suite `test_restore_variant_and_conflict_handling` where the conflicting SKU variant creation attempted to reuse an existing active option value combination. Introduced a third unique option value (`"Blue"`) so the conflicting variant is actually created, causing variant restoration to correctly fail with `409 Conflict` (DUPLICATE_SKU) as asserted.
 - All changes are fully type-safe, compile clean, and inherit existing locale fallback behavior in Spanish and other non-default languages.
 
+## Completed Slice 20: Archive-vs-Delete Retention Migration
+
+Status: Complete on 2026-05-18
+
+Summary:
+- Fully implemented the finalized logical soft-deletion and archive retention strategy for the variant domain contract.
+- Added migration metadata fields to preserve historical references (orders, snapshots, analytics, media) permanently.
+- Integrated `archived_at` and `is_archived` properties into database structures, Alembic migrations, backend schemas, and frontend interfaces.
+- Hardened business and matrix rebuild services to populate archiving timestamps cleanly and safely.
+
+Database & Alembic:
+- Added `archived_at: datetime | None` field with a database index to `ProductVariant` in [`models.py`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-B/app/modules/catalog/models.py).
+- Implemented `is_archived` as a dynamic helper property on the backend `ProductVariant` model based on its `lifecycle_status`.
+- Generated and registered the Alembic migration version `e8a7d2e9f104` in [`e8a7d2e9f104_add_variant_archived_at.py`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-B/alembic/versions/e8a7d2e9f104_add_variant_archived_at.py) to add the `archived_at` column to the `product_variants` database table.
+
+Backend API & Schemas:
+- Updated `ProductVariantRead` in [`schemas.py`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-B/app/modules/catalog/schemas.py) to export `archived_at` timestamps through variant payloads.
+- Configured variant archiving (`delete_product_variant_row`) inside [`service.py`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-B/app/modules/catalog/service.py) to automatically record the current timestamp in `archived_at` when archiving is triggered.
+- Configured variant restoration (`restore_product_variant_row`) inside [`service.py`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-B/app/modules/catalog/service.py) to automatically reset `archived_at` to `None` upon successful recovery.
+
+Frontend Types:
+- Extended `ProductVariantRead` in [`types.ts`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-F/px/lib/catalog/types.ts) to natively support the optional `archived_at` ISO string.
+
+Tests and validation:
+- Added `test_variant_archived_at_lifecycle` in [`test_catalog_variants.py`](file:///home/muhsin/Desktop/muhsy/.lokiu/PX/PX-B/tests/test_catalog_variants.py) to comprehensively assert variant archiving/restoration lifecycle behavior and its direct effect on `archived_at` timestamps.
+
 ## Still Not Complete
 
 The full multi-phase plan is not finished yet. Remaining major areas:
 - **Phase 9: Observability & Metrics**: Deeper health views and alert policy surfaces can be added later, but core backend metrics and dashboard visibility are now complete.
 - **Policy-Based Tier Enforcement**: Variant structure write enforcement is now complete; any future non-variant catalog tier features should follow the same target-store policy pattern.
-- **Archive-vs-delete migration**: Initial variant lifecycle persistence, direct archive behavior, and frontend restoration are fully implemented.
 - **E2E coverage**: Storefront published snapshot visibility, template apply quota failures, and media rebinding after rebuild now have API-level regression coverage. Full browser-level admin/storefront workflows are still pending.
 - **Dead-code cleanup**: Final pass across both apps after all phases are complete.
 

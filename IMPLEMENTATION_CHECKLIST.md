@@ -63,10 +63,10 @@ These are done and should not be reimplemented:
 - [x] Batched variant selection resolution.
 - [x] Target-store tier enforcement.
 - [x] Published snapshot storefront regression coverage.
+- [x] Archive-vs-delete migration.
 
 ## Remaining Checklist Candidates
 
-- [ ] Archive-vs-delete migration.
 - [ ] Template apply/quota failure coverage.
 - [ ] Media rebinding after rebuild coverage.
 - [ ] Full browser-level admin/storefront E2E.
