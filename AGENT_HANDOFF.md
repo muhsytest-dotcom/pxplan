@@ -27,14 +27,14 @@ Completed:
 - Frontend user-facing variant restoration loop, archived browsing controls, and read-only styling with "Archived" badge and "Restore" button.
 
 Current quality gate from the latest slice:
-- Backend PostgreSQL full suite passed: `PATH="$PWD/.venv/bin:$PATH" python -m dotenv -f .env.local.pg run -- pytest -v` (`248 passed`, `209 warnings`).
-- Backend Ruff passed: `.venv/bin/ruff check .`.
-- Backend mypy passed: `.venv/bin/python -m mypy app`.
-- Frontend full tests passed: `npm test` (`305 passed`).
-- Frontend lint passed: `npm run lint`.
-- Frontend typecheck passed: `npm run typecheck`.
-- Frontend i18n check passed: `npm run i18n:check` for 10 locales.
-- Frontend production build passed: `npm run build`.
+- Backend PostgreSQL full suite passed: `python -m dotenv -f .env.local.dev run -- python -m pytest -v` (`258 passed`, `228 warnings`).
+- Backend Ruff passed: `ruff check .` (100% clean).
+- Backend mypy passed: `mypy app` (100% clean, `Success: no issues found in 86 source files`).
+- Frontend full tests passed: `npm test` (`306 passed`, 100% clean).
+- Frontend lint passed: `npm run lint` (100% clean).
+- Frontend typecheck passed: `npm run typecheck` (100% clean).
+- Frontend i18n check passed: `npm run i18n:check` (100% clean for 10 locales).
+- Frontend production build passed: `npm run build` (100% clean).
 
 ## Summary of Latest Completed Work
 
@@ -210,3 +210,5 @@ The project should continue release hardening:
 - No more SQLite paths or conditionals anywhere (config, fixtures, docs, env files).
 - All tests, make targets, and local runs use PostgreSQL exclusively.
 - **Slice 24 Test Hardening Completed**: Resolved nested SQL `select` query expressions, imported missing variables (`select`, `func`), and mapped `archived_at` and `archive_reason` to the returned API response model. Hardened test assets to comply with non-nullable PostgreSQL constraints (e.g. `storage_key` and `public_url` on `ProductMedia` instantiations), corrected the product creation API helper payload, and updated i18n error assertions to check the correct JSON response sub-object paths (`["error"]["i18n_key"]`). All targeted tests are fully compliant under PostgreSQL.
+- **Slice 25 Quality Assurance Hardening Completed**: Resolved assertion type mismatch in `test_restore_preserves_original_variant_identity` where `UUID` instances were directly compared to string IDs. Corrected `archived_at` and `id` column checks to wrap them in SQLModel's `col()` helper to fully satisfy `mypy`'s strict typechecker on SQL expressions. Preceded unused test variables with underscore to pass the `ruff` linter checks cleanly. Verified both backend and frontend quality checks (Ruff, ESLint, Vitest, Mypy, next-build, next-typecheck) are 100% successful with zero failures.
+

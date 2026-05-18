@@ -749,3 +749,28 @@ Tests:
 
 Verification completed:
 - All resolved bugs and modified test assets have been linted and validated for correct execution, syntax, and relational database compatibility.
+
+## Completed Slice 25: Unified Test Compliance & Quality Assurance Hardening
+
+Status: Complete on 2026-05-18
+
+Summary:
+- Hardened both frontend and backend test suites, type annotations, and linters to achieve 100% unified test compliance under the strict PostgreSQL dev environment.
+- Resolved type mismatches, linters, and typechecker complaints to secure zero errors in either app's quality gate.
+
+Backend:
+- Fixed a type mismatch assertion bug in [`test_catalog_invariants.py`](file:///D:/Github/muhsinmuhsy/PX/PX-B/tests/test_catalog_invariants.py) under `test_restore_preserves_original_variant_identity` where `UUID` instances were incorrectly compared to string IDs. Added string conversion to resolve the assertion failure.
+- Wrapped the `archived_at` column checks inside `col(ProductVariant.archived_at)` in [`service.py`](file:///D:/Github/muhsinmuhsy/PX/PX-B/app/modules/catalog/service.py) to fix Mypy type-checking errors for optional datetime comparisons.
+- Wrapped `ProductMedia.id` and `ProductAttributeValue.id` inside `col()` helper calls within `select(func.count(...))` queries in [`service.py`](file:///D:/Github/muhsinmuhsy/PX/PX-B/app/modules/catalog/service.py) to satisfy Mypy argument expectations.
+- Prefixed unused local test variable `white_id` with an underscore `_white_id` in [`test_catalog_variants.py`](file:///D:/Github/muhsinmuhsy/PX/PX-B/tests/test_catalog_variants.py) to satisfy Ruff linter check.
+
+Verification completed:
+- Backend Ruff linter: 100% clean ("All checks passed!").
+- Backend Mypy static check: 100% clean ("Success: no issues found in 86 source files").
+- Backend full test suite: 100% clean passing (`258 passed` out of 258, using canonical `.env.local.dev` Postgres config).
+- Frontend ESLint check: 100% clean (`eslint` successfully executed with exit code 0).
+- Frontend TypeScript typecheck: 100% clean (`tsc --noEmit` successfully executed with exit code 0).
+- Frontend i18n locales verification: 100% clean (`i18n check passed for 10 locales`).
+- Frontend full test suite: 100% clean passing (`306 passed` out of 306, using `vitest run`).
+- Next.js production build: 100% compiled successfully (`npm run build` successfully compiled with exit code 0).
+
