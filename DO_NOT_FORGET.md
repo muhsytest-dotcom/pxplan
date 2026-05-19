@@ -1,77 +1,66 @@
 # Do Not Forget
 
-Last updated: 2026-05-17
+Last updated: 2026-05-19
 
 ## Current Reality
 
-The old production blockers are complete through Slice 14. This checklist is for new release-hardening work.
+The core variant stabilization, snap publishing, and logical soft-deletions/archiving features are complete and verified through **Slice 25**. This checklist is to ensure any new feature work maintains these high architectural standards.
 
 ## Before Coding
 
-- [ ] Read `AGENT_HANDOFF.md`.
+- [ ] Read `AGENT_HANDOFF.md` completely.
 - [ ] Read `WHAT-DONE.md`.
 - [ ] Confirm the work is not already implemented.
-- [ ] Review live code for patterns.
+- [ ] Review live code for active patterns.
 - [ ] Identify tests that should change or be added.
 - [ ] Decide whether database/API/schema behavior changes are required.
 
 ## Architecture Must-Preserve
 
-- [ ] Structure mutations reject active jobs.
-- [ ] Rebuild preview and job creation still protect legacy/imported over-quota structures.
-- [ ] Target-store tier policy remains enforced.
-- [ ] Storefront structure uses the published snapshot when `published_version > 0`.
-- [ ] Storefront variants are scoped to `published_version`.
-- [ ] Generation jobs do not auto-publish.
-- [ ] SSE streams status only.
-- [ ] Error envelopes keep `error.i18n_key` and `error.context`.
-- [ ] Tenant/store ownership checks remain in all admin paths.
-- [ ] Batched selection resolution is not replaced with N+1 lookups.
-- [ ] **Archive-by-default**: All variant deletion must use `is_archived = true`, not hard delete. See `ARCHIVE_DELETE_MIGRATION_STRATEGY.md` for complete specification. Never hard-delete variants linked to orders, snapshots, or media.
+- [ ] **Lock Out Structure Changes**: All option/value structure modifications must reject execution if an active variant job is found for that product.
+- [ ] **Matrix Limits Enforced**: Prevent matrix explosion early on option writes, templates, and copy flows.
+- [ ] **Published Snapshot Isolation**: Public storefront reads must always resolve against the immutable snapshot linked to `product.published_version`, protecting storefront displays from raw merchant drafts.
+- [ ] **SSE Telemetry Only**: SSE handlers are strictly one-way progress monitors; they must never run business operations or database changes directly.
+- [ ] **Error Envelope Integrity**: API validation checks must return standard Exception responses with `error.i18n_key` and `error.context`.
+- [ ] **Soft-Delete by Default**: Variant removals must archive variants logically (`is_archived = true` and `archived_at` timestamped), never hard-delete them.
+- [ ] **Active-Only uniqueness**: SKUs and option combinations are conditional on `is_archived = false`, allowing replacement variants to claim previously archived identifiers.
+- [ ] **FK Clean Ordering**: When option value rows are removed, the variant values referencing them must be cleaned up before removing the option value row itself to stay PostgreSQL foreign-key compliant.
 
 ## Critical Archive-vs-Delete Rules
 
 ✅ **MUST DO**:
-- Convert all hard deletes to archive updates
-- Preserve variants with FK references forever
-- Add `archived_at` timestamps
-- Filter archived from storefront
-- Log all archive/delete actions with audit trail
-- Test that orders remain resolvable after archiving
+- Convert all hard deletes to soft-delete archive updates.
+- Preserve variants with FK references (orders, snapshots, media) forever.
+- Log all archive/restore events using the unified audit logging engine.
+- Ensure storefront filters ignore archived variants while history remains queryable.
 
 ❌ **MUST NOT DO**:
-- Hard-delete variants referenced by orders (Note: Orders & Carts do not exist in the codebase yet; when built, the cleanup policy MUST be updated immediately to block deletion of variants referenced in them)
-- Cascade-delete variants from snapshots
-- Remove variants from published snapshots
-- Skip archive logging
-- Change deletion behavior without updating all FK surfaces
-
-See `ARCHIVE_DELETE_MIGRATION_STRATEGY.md` before making any deletion changes.
+- Hard-delete variants linked to storefront elements or snapshots.
+- Hard-delete archived variants unless they are older than 90+ days and completely unreferenced.
+- *Note for future Orders/Carts*: If orders and carts are added in the future, the cleanup policy **must immediately** check that the variant is not referenced by any order or cart.
 
 ## Validation
 
-Backend:
+Everything must run under PostgreSQL. SQLite is deprecated.
 
+### Backend Validation:
 ```powershell
 cd PX-B
-.\.venv\bin\python -m pytest tests -q
-.\.venv\bin\ruff check .
-.\.venv\bin\python -m mypy app
+python -m dotenv -f .env.local.dev run -- pytest -v
+ruff check .
+mypy app
 ```
 
-Frontend:
-
+### Frontend Validation:
 ```powershell
 cd PX-F
 npm test
 npm run lint
 npm run typecheck
-npm run i18n:check
 npm run build
 ```
 
 ## Documentation Finish
 
-- [ ] Update `WHAT-DONE.md` only after validation passes.
-- [ ] Update `AGENT_HANDOFF.md` or a dedicated handoff file.
-- [ ] Document completed work, reasoning, architecture decisions, pending tasks, known issues, changed files, API/database/schema changes, assumptions, next steps, and avoid-breaking notes.
+- [ ] Update `WHAT-DONE.md` only after all validation checks pass.
+- [ ] Update `AGENT_HANDOFF.md` with latest details, changed files, decisions, changed schemas, and safety guidelines.

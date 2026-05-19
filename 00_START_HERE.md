@@ -1,108 +1,70 @@
 # Start Here
 
-Last updated: 2026-05-17
+Last updated: 2026-05-19
 
 ## Purpose
 
-This folder guides code agents working on the PX project. It is now aligned with the live implementation through Slice 14.
+This folder guides code agents working on the PX project. It is fully aligned with the live implementation through **Slice 25**.
 
 ## Current Status
 
-The variants stabilization work is complete through Slice 14. The old blocker roadmap is complete and should not be restarted.
+The variants stabilization and logical soft-delete archiving work is complete through **Slice 25**. The entire backend and frontend test suites are 100% green under PostgreSQL with zero warnings.
 
-Completed:
+### Key Stabilization Achievements:
 - Core variant domain foundation and canonical identity.
-- Durable SSE job events with replay.
-- Variant explosion protection and tier quotas.
-- Decoupled worker execution with error classification, retry tracking, timeout, and cancellation.
+- Durable SSE job events with automatic polling fallback.
+- Variant explosion protection and Basic/Pro store tier limits.
+- Decoupled worker process pool execution with cooperative cancellation.
 - Immutable structure snapshots and explicit publication swaps.
-- Backend i18n error envelopes and frontend catalog error-key translation.
-- Variant job metrics and dashboard panel.
-- Frontend SSE recovery fallback.
-- Batched selection resolution for admin/storefront listings.
-- Target-store tier enforcement for structure writes.
-- Published snapshot storefront regression coverage.
+- Custom auditing engine tracking logical archiving reasons and operators.
+- Active-only variant uniqueness indexes allowing archived SKU restoration.
+- PostgreSQL-only test harness and env isolation (Testcontainers + Alembic).
 
 ## Required Reading Order
 
-1. `AGENT_HANDOFF.md`
-2. `WHAT-DONE.md`
-3. `CODE_AGENT_QUICKSTART.md`
-4. `CODE_AGENT_COMPREHENSIVE_GUIDE.md`
-5. **`ARCHIVE_DELETE_MIGRATION_STRATEGY.md`** ← Read before any deletion changes
-6. `QUICK_REFERENCE.md`
-7. Relevant architecture references:
+1. `AGENT_HANDOFF.md` ← **Read this first!** It contains the core guidelines to prevent breaking features.
+2. `WHAT-DONE.md` ← Detailed slice-by-slice changelog of what was implemented.
+3. Relevant architecture specs:
    - `variant-domain-contract.md`
    - `technical-architecture-spec.md`
-   - `VARIANTS_FEATURE_STRUCTURE.md`
-8. `DO_NOT_FORGET.md` before finishing
+   - `ARCHIVE_DELETE_MIGRATION_STRATEGY.md`
+4. `DO_NOT_FORGET.md` ← Read before finishing any new feature code.
 
-## Source Of Truth
+## Source of Truth
 
 Use this priority when documents disagree:
-
 1. Live code.
-2. `AGENT_HANDOFF.md`.
-3. `WHAT-DONE.md`.
+2. `AGENT_HANDOFF.md` (Updated 2026-05-19).
+3. `WHAT-DONE.md` (Updated with Slice 25).
 4. Architecture contracts.
-5. Other guides.
 
-## Current Work To Pick From
+## Current Work / Pending Tasks
 
-- **Archive-vs-delete migration strategy and implementation** ← Decision finalized, see `ARCHIVE_DELETE_MIGRATION_STRATEGY.md`
-- Remaining E2E/API coverage:
-  - template apply and quota failure;
-  - media rebinding after rebuild;
-  - full browser-level admin setup -> generate -> publish -> storefront visibility.
-- Final dead-code cleanup after archive semantics settle.
-- Optional deeper observability: alert policies, health views, reconnect metrics, and operational drilldowns.
-
-## Do Not Pick
-
-These were already implemented:
-- error classification;
-- worker retry;
-- backend i18n key registry;
-- frontend catalog error-key translation;
-- job error tracking fields;
-- durable SSE;
-- snapshot capture;
-- metrics dashboard;
-- SSE fallback;
-- batched variant selection resolution;
-- target-store tier enforcement.
-
-## Current Project Paths
-
-- Backend: `PX-B`
-- Frontend: `PX-F`
-- Planning docs: `pxplan`
+- **Richer E2E/API Coverage**:
+  - Unified admin-storefront flow: options setup -> generate -> publish -> storefront query.
+  - Template quota and media detaching end-to-end browser-level assertions.
+- **Advanced Observability**:
+  - setup Prometheus alerting policies for SSE reconnection rates.
+- **Dead-Code Cleanup**:
+  - Remove deprecated mock or legacy utility files once logical archiving is fully deployed to production.
 
 ## Validation Commands
 
-Backend:
+All operations and tests run under PostgreSQL. SQLite is completely deprecated.
 
+### Backend Validation:
 ```powershell
 cd PX-B
-.\.venv\bin\python -m pytest tests -q
-.\.venv\bin\ruff check .
-.\.venv\bin\python -m mypy app
+python -m dotenv -f .env.local.dev run -- pytest -v
+ruff check .
+mypy app
 ```
 
-Frontend:
-
+### Frontend Validation:
 ```powershell
 cd PX-F
 npm test
 npm run lint
 npm run typecheck
-npm run i18n:check
 npm run build
 ```
-
-## Documentation Finish
-
-After implementation and validation:
-- Update `WHAT-DONE.md`.
-- Update `AGENT_HANDOFF.md` or a dedicated handoff file.
-- Include current status, completed work, decisions, reasoning, changed files, API/database/schema changes, assumptions, pending work, known issues, next steps, and avoid-breaking notes.

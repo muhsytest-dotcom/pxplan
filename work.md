@@ -1,25 +1,27 @@
 # Current Work Notes
 
-Last updated: 2026-05-17
+Last updated: 2026-05-19
 
 ## Current Direction
 
-PX variants are complete through Slice 14. Continue with release hardening.
+All core variants stabilization, asynchronous workers, snapshot publishing, and soft-delete archiving workflows are 100% complete through **Slice 25**. The workspace is extremely stable and ready.
 
-Recommended next slices:
-- Archive-vs-delete migration strategy and implementation.
-- Remaining E2E/API coverage for template quota failures, media rebinding after rebuild, and full browser admin-to-storefront flow.
-- Final dead-code cleanup after archive semantics settle.
-- Optional deeper observability.
+Recommended next steps:
+1. **Richer E2E/API Coverage**:
+   - Unified admin-storefront browser-level integration flow: options setup -> generate -> publish -> storefront query.
+   - Template apply quota failures and media rebinding end-to-end browser assertions.
+2. **Advanced Observability**:
+   - Add Prometheus alerting policies for SSE reconnection rates.
+3. **Dead-Code Cleanup**:
+   - Clean up any leftover helper files or legacy mock classes that became obsolete once the logical soft-delete archiving patterns finalized.
 
-## Important Context
+## Important Context for Future Slices
 
-- Do not redo completed blocker work.
-- Do not change variant hard-delete behavior without the archive migration plan.
-- Storefront structure must stay pinned to published snapshots.
-- Storefront variants must stay scoped to `product.published_version`.
-- Keep backend and frontend i18n behavior aligned with the existing implementation.
+- Do not bypass `assert_no_active_job` on structure writes.
+- Do not make storefront variant listing ignore `product.published_version`.
+- Do not hard-delete variants that may have orders, snapshots, or media referencing them; direct variant removal must remain soft-deleted.
+- Run both backend tests and frontend tests inside the Postgres-only environment after making modifications.
 
 ## Documentation Rule
 
-After completing a slice, update `WHAT-DONE.md` and `AGENT_HANDOFF.md`.
+After completing any new slice, always update `WHAT-DONE.md` and `AGENT_HANDOFF.md` before concluding the handoff.
