@@ -763,11 +763,13 @@ Backend:
 - Wrapped the `archived_at` column checks inside `col(ProductVariant.archived_at)` in [`service.py`](file:///D:/Github/muhsinmuhsy/PX/PX-B/app/modules/catalog/service.py) to fix Mypy type-checking errors for optional datetime comparisons.
 - Wrapped `ProductMedia.id` and `ProductAttributeValue.id` inside `col()` helper calls within `select(func.count(...))` queries in [`service.py`](file:///D:/Github/muhsinmuhsy/PX/PX-B/app/modules/catalog/service.py) to satisfy Mypy argument expectations.
 - Prefixed unused local test variable `white_id` with an underscore `_white_id` in [`test_catalog_variants.py`](file:///D:/Github/muhsinmuhsy/PX/PX-B/tests/test_catalog_variants.py) to satisfy Ruff linter check.
+- Added `path_separator = os` to [`alembic.ini`](file:///D:/Github/muhsinmuhsy/PX/PX-B/alembic.ini) to silence the Alembic configuration path separator warning.
+- Replaced all legacy `datetime.utcnow()` calls with the app-wide `utcnow()` helper in [`test_catalog_archive_retention.py`](file:///D:/Github/muhsinmuhsy/PX/PX-B/tests/test_catalog_archive_retention.py), [`test_catalog_invariants.py`](file:///D:/Github/muhsinmuhsy/PX/PX-B/tests/test_catalog_invariants.py), and [`test_catalog_variants.py`](file:///D:/Github/muhsinmuhsy/PX/PX-B/tests/test_catalog_variants.py) to completely eliminate all deprecation warnings in test suites.
 
 Verification completed:
 - Backend Ruff linter: 100% clean ("All checks passed!").
 - Backend Mypy static check: 100% clean ("Success: no issues found in 86 source files").
-- Backend full test suite: 100% clean passing (`258 passed` out of 258, using canonical `.env.local.dev` Postgres config).
+- Backend full test suite: 100% clean passing (`258 passed` out of 258, using canonical `.env.local.dev` Postgres config with ZERO deprecation warnings from our modified files).
 - Frontend ESLint check: 100% clean (`eslint` successfully executed with exit code 0).
 - Frontend TypeScript typecheck: 100% clean (`tsc --noEmit` successfully executed with exit code 0).
 - Frontend i18n locales verification: 100% clean (`i18n check passed for 10 locales`).
