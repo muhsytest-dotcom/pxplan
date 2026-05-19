@@ -1,6 +1,41 @@
 # Variants Stabilization Progress
 
-Last updated: 2026-05-18
+Last updated: 2026-05-19
+
+## Completed: Variant Worker Stabilization & Job Processing Fix (2026-05-19)
+
+Fixed critical issues preventing the background variant worker from processing jobs.
+
+### Changes Made
+
+**Makefile**
+- Updated `run-worker` and `dev-worker` targets to load `.env.local.dev` (same as `make run`)
+- This ensures the worker connects to PostgreSQL instead of falling back to SQLite
+
+**Worker (`app/modules/catalog/worker.py`)**
+- Added missing model imports to resolve SQLAlchemy foreign key errors:
+  - `from app.modules.users.models import User`
+  - `from app.modules.stores.models import Store`
+- Improved `fetch_next_job()` with `with_for_update(skip_locked=True)` for safe concurrent job claiming
+- Added better error logging during job claiming
+
+**Tests**
+- Created `tests/test_catalog_worker.py` with comprehensive test coverage:
+  - `TestFetchNextJob`: job claiming, rollback on failure, empty queue handling
+  - `TestExecuteWithRetry`: success path, retry logic, failure handling
+  - `TestWorkerIntegration`: basic worker flow
+
+### Issues Resolved
+- Worker was stuck on "Query returned job: None" even when jobs existed
+- `NoReferencedTableError` on `catalog_jobs.created_by_user_id` and `store_id`
+- Jobs left stuck in `running` state after failed processing attempts
+
+### Result
+Worker can now successfully:
+- Poll for queued jobs
+- Atomically claim jobs
+- Execute variant generation / rebuild jobs
+- Handle retries and mark failed jobs correctly
 
 ## Completed Slice 1: Core Domain Foundation
 
