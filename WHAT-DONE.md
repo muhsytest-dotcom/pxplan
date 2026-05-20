@@ -811,3 +811,26 @@ Verification completed:
 - Frontend full test suite: 100% clean passing (`306 passed` out of 306, using `vitest run`).
 - Next.js production build: 100% compiled successfully (`npm run build` successfully compiled with exit code 0).
 
+## Completed Slice 26: Option Deletion Concurrency Guard Alignment
+
+Status: Complete on 2026-05-20
+
+Summary:
+- Fully aligned the frontend catalog options and values deletion API paths with the backend's strict concurrency guard contract (`expected_version` and `expected_hash` query parameters).
+- Added comprehensive unit and negative test coverage verifying strict parameter serialization, validation boundaries, and UI fallback states.
+
+Frontend:
+- Implemented `appendStructureGuard(path, guard)` in [`api.ts`](file:///D:/Github/muhsinmuhsy/PX/PX-F/lib/catalog/api.ts) utilizing the browser-native `URL` and `URLSearchParams` objects to construct query paths cleanly without manual string concatenation.
+- Updated `deleteProductOption` and `deleteProductOptionValue` in [`api.ts`](file:///D:/Github/muhsinmuhsy/PX/PX-F/lib/catalog/api.ts) to accept and forward the optimistic concurrency `ProductStructureGuard` parameters to the API request.
+- Refactored option and option value deletion action hooks (`onDeleteOption` and `onDeleteOptionValue`) in [`use-product-variant-actions.ts`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/product-editor/use-product-variant-actions.ts) to validate guard properties early and trigger the `refreshRequired` UI state gracefully when structure metadata is stale or missing.
+
+Tests & Verification:
+- Added route serialization and exception assertions in [`api.test.ts`](file:///D:/Github/muhsinmuhsy/PX/PX-F/lib/catalog/__tests__/api.test.ts) to guarantee correct parameter serialization and verify that missing expected hashes synchronously throw a `"Missing structure guard hash"` exception.
+- Created a robust unit test suite for the action hook state machine in [`use-product-variant-actions.test.ts`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/product-editor/__tests__/use-product-variant-actions.test.ts) utilizing a factory pattern for mock isolation. Asserted that deletions cleanly enforce optimistic concurrency parameters and set the UI error state correctly when structure guards are missing.
+- Registered newly introduced deletion parameters inside the component mocks of [`admin-product-edit-form.test.tsx`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/__tests__/admin-product-edit-form.test.tsx).
+
+Verification completed:
+- Frontend ESLint check: 100% clean (`eslint` successfully executed with exit code 0).
+- Frontend TypeScript typecheck: 100% clean (`tsc --noEmit` successfully executed with exit code 0).
+- Frontend full test suite: 100% clean passing (`315 passed` out of 315, using `vitest run`).
+

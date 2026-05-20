@@ -1,16 +1,16 @@
 # Agent Handoff and Continuity
 
-Last updated: 2026-05-19
+Last updated: 2026-05-20
 
 Read this document first, then `00_START_HERE.md`, `WHAT-DONE.md`, and the architecture/design specs. Treat this file, `WHAT-DONE.md`, and the live code as the authoritative source of truth for the current state.
 
 ---
 
-## 1. Latest Implementation Status (Slice 25 Complete)
+## 1. Latest Implementation Status (Slice 25 & Deletion Concurrency Alignment Complete)
 
-The core product variant synchronization engine, background processing pipeline, multi-tenant boundaries, and logical archiving/retention strategies are **100% complete, fully implemented, and validated**.
+The core product variant synchronization engine, background processing pipeline, multi-tenant boundaries, logical archiving/retention strategies, and frontend/backend option deletion optimistic concurrency guard contracts are **100% complete, fully implemented, and validated**.
 
-### Completed Slices (Slices 1 to 25):
+### Completed Slices (Slices 1 to 25 & Guard Alignment):
 - **Core Domain & Identity**: Canonical option combination keys (locale-independent sorted hashes) and active-only database-level uniqueness constraints.
 - **Durable Progress Streams**: Server-Sent Events (SSE) background job tracking with monotonic sequence ordering and automatic client-side reconnection/API polling fallback.
 - **Explosion & Quota Protections**: Destination-scoped target store tier policy validation (`Basic` vs. `Pro` limits) checking matrix limits on option apply, templates, copy actions, and background worker queues.
@@ -24,6 +24,10 @@ The core product variant synchronization engine, background processing pipeline,
   - Active-only variant index structure, allowing merchants to re-create active variations with previously archived SKUs/combinations.
   - Administrative restoration drawer, browse filters for archived variants, and strict inputs locking.
   - PostgreSQL-only test harness and env settings silencing legacy splitting warnings (`path_separator = os`) and eliminating the standard library `datetime.utcnow()` deprecation warnings.
+- **Option Deletion Concurrency Guard Contract**:
+  - Aligned frontend deletion API calls to append `expected_version` and `expected_hash` query parameters using the browser-native `URL` object wrapper.
+  - Validated `structureGuard` presence and validity early, setting UI status to `refreshRequired` when the guard is missing or stale.
+  - Verified and asserted behavior in unit testing (both positive route parameter verification and negative test cases verifying that missing/invalid guards gracefully halt API calls).
 
 ### Quality Gate Compliance:
 | Gate | Verification Command | Status |
@@ -31,7 +35,7 @@ The core product variant synchronization engine, background processing pipeline,
 | **Backend Tests** | `pytest -v` (Postgres env) | **`258 passed` / `258`** (100% green, 0 deprecation/path warnings) |
 | **Backend Linter** | `ruff check .` | **`100% clean`** (0 warnings) |
 | **Backend Types** | `mypy app` | **`100% clean`** (Success: no issues in 86 source files) |
-| **Frontend Tests** | `vitest run` | **`306 passed` / `306`** (100% green) |
+| **Frontend Tests** | `vitest run` | **`315 passed` / `315`** (100% green) |
 | **Frontend Linter** | `npm run lint` | **`100% clean`** (0 warnings) |
 | **Frontend Types** | `npm run typecheck` | **`100% clean`** (0 warnings) |
 | **Frontend Build** | `npm run build` | **`Compiled successfully`** (Production ready) |
