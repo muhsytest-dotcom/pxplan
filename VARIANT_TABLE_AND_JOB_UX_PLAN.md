@@ -5,6 +5,7 @@ Created: 2026-05-24
 Scope: PX-F product editor variant management UX and state flow
 
 Decision status:
+- Implemented in Slice 27: centralized variant job controller, completed-job auto-dismiss, failed-job persistence, manual terminal-card dismissal, 1.5 second polling fallback, 10 second idle heartbeat, and safe existing-row editing during missing/orphaned attention states.
 - Adopted: completed jobs auto-dismiss; failed jobs persist until manual dismissal.
 - Adopted: one combined "Variant" identity column as the primary table layout.
 - Adopted: explicit save with row-level confidence feedback before any autosave work.

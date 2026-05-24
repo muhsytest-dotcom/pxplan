@@ -834,3 +834,76 @@ Verification completed:
 - Frontend TypeScript typecheck: 100% clean (`tsc --noEmit` successfully executed with exit code 0).
 - Frontend full test suite: 100% clean passing (`315 passed` out of 315, using `vitest run`).
 
+## Completed Slice 27: Variant Job UX Controller and Safe Editing Unlock
+
+Status: Complete on 2026-05-24
+
+Summary:
+- Implemented the first production slice from `VARIANT_TABLE_AND_JOB_UX_PLAN.md`.
+- Centralized variant job discovery, SSE connection handling, polling fallback, terminal handling, dismissal, and idle active-job discovery into a reusable frontend controller hook.
+- Improved the non-technical user flow by keeping existing variant rows editable when missing variant rows need attention, instead of freezing the whole table.
+- Added focused frontend tests for job controller timing, terminal job behavior, dismissibility, and safe editing during missing-row states.
+
+Frontend:
+- Added `useVariantJobController` in [`use-variant-job-controller.ts`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/product-editor/use-variant-job-controller.ts) to own:
+  - idle active-job heartbeat every 10 seconds,
+  - SSE subscription lifecycle,
+  - 1.5 second polling fallback,
+  - completed-job auto-dismiss after 5 seconds,
+  - failed-job persistence until manual dismissal,
+  - terminal job callbacks and cleanup.
+- Refactored [`admin-product-edit-form.tsx`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/admin-product-edit-form.tsx) to use the controller hook and keep refresh/toast business behavior in the parent form.
+- Added terminal job dismissal to `VariantJobPanel` in [`product-variants-section.tsx`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/product-editor/product-variants-section.tsx), with i18n-backed accessible label text.
+- Replaced the broad `manageVariantsLocked` table lock with a narrower editing lock:
+  - active/initializing job states still block row edits,
+  - missing/orphaned structure attention still shows warnings,
+  - existing non-archived variant rows remain editable for safe fields.
+- Renamed the row prop in [`variant-table-row.tsx`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/product-editor/variant-table-row.tsx) from structure-lock semantics to `variantEditingLocked`.
+- Added `variantJobDismissLabel` to [`admin-copy.ts`](file:///D:/Github/muhsinmuhsy/PX/PX-F/lib/catalog/admin-copy.ts), inherited by all locale copies through the existing spread pattern.
+
+Backend:
+- No API, database, or schema behavior changed.
+- Cleaned pre-existing backend worker lint/type issues so backend Ruff and Mypy gates pass:
+  - removed unused imports and stale debug/comment noise in [`worker.py`](file:///D:/Github/muhsinmuhsy/PX/PX-B/app/modules/catalog/worker.py),
+  - wrapped `CatalogVariantJob.created_at` with `col(...)` for SQLModel/Mypy compatibility,
+  - removed unused imports/locals from [`test_catalog_worker.py`](file:///D:/Github/muhsinmuhsy/PX/PX-B/tests/test_catalog_worker.py).
+
+Tests:
+- Added [`use-variant-job-controller.test.tsx`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/product-editor/__tests__/use-variant-job-controller.test.tsx), covering:
+  - idle heartbeat active-job discovery,
+  - 1.5 second polling fallback,
+  - completed job callback and auto-dismiss,
+  - failed job persistence until manual dismissal.
+- Updated [`product-variants-section.test.tsx`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/product-editor/__tests__/product-variants-section.test.tsx) for terminal job dismissal.
+- Updated [`admin-product-edit-form.test.tsx`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/__tests__/admin-product-edit-form.test.tsx) so missing variant rows are treated as attention state while existing rows remain editable.
+- Ran targeted backend worker tests after cleanup.
+
+Important reasoning:
+- The controller hook prevents scattered effects from duplicating SSE subscriptions, restarting polling on every job payload update, or resurrecting dismissed terminal cards.
+- Completed job feedback is temporary because it is success feedback; failed job feedback remains persistent because it is actionable.
+- Editing existing variant rows is safe during missing-row attention states because backend variant row updates do not require product structure guards; structural actions remain guarded separately.
+
+API, database, and schema changes:
+- None.
+
+Verification completed:
+- Frontend targeted variant tests: `44 passed`.
+- Frontend full test suite: `320 passed` out of `320`.
+- Frontend ESLint: passed with exit code 0. Existing unrelated warning remains in `lib/catalog/api.ts` for an unused `text` parameter.
+- Frontend TypeScript: passed (`tsc --noEmit`).
+- Frontend i18n check: passed for 10 locales.
+- Frontend production build: compiled successfully.
+- Backend Ruff: passed (`All checks passed!`).
+- Backend Mypy: passed (`Success: no issues found in 86 source files`).
+- Backend targeted worker tests: `7 passed`.
+
+Environment-limited verification:
+- Backend full pytest was attempted through `w.venv`, but could not run because Docker/Testcontainers cannot connect to `//./pipe/docker_engine` in this environment. The failure occurs during test fixture setup before application tests execute and is unrelated to this slice's code changes.
+
+Pending follow-up:
+- Continue with the next approved UX phases:
+  - row-level save confidence states,
+  - explicit soft vs hard refresh reconciliation,
+  - `VariantIdentityCell` and combined Variant identity column,
+  - selection-based bulk editing.
+

@@ -6,9 +6,9 @@ Read this document first, then `00_START_HERE.md`, `WHAT-DONE.md`, and the archi
 
 ---
 
-## 1. Latest Implementation Status (Slice 25 & Deletion Concurrency Alignment Complete)
+## 1. Latest Implementation Status (Slice 27 Variant Job UX Controller & Safe Editing Unlock Complete)
 
-The core product variant synchronization engine, background processing pipeline, multi-tenant boundaries, logical archiving/retention strategies, and frontend/backend option deletion optimistic concurrency guard contracts are **100% complete, fully implemented, and validated**.
+The core product variant synchronization engine, background processing pipeline, multi-tenant boundaries, logical archiving/retention strategies, frontend/backend option deletion optimistic concurrency guard contracts, and first variant UX stabilization slice are **implemented and validated**.
 
 ### Completed Slices (Slices 1 to 25 & Guard Alignment):
 - **Core Domain & Identity**: Canonical option combination keys (locale-independent sorted hashes) and active-only database-level uniqueness constraints.
@@ -28,6 +28,12 @@ The core product variant synchronization engine, background processing pipeline,
   - Aligned frontend deletion API calls to append `expected_version` and `expected_hash` query parameters using the browser-native `URL` object wrapper.
   - Validated `structureGuard` presence and validity early, setting UI status to `refreshRequired` when the guard is missing or stale.
   - Verified and asserted behavior in unit testing (both positive route parameter verification and negative test cases verifying that missing/invalid guards gracefully halt API calls).
+- **Variant Job UX Controller & Safe Editing Unlock (Slice 27)**:
+  - Added `useVariantJobController` in [`use-variant-job-controller.ts`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/product-editor/use-variant-job-controller.ts) as the single frontend lifecycle owner for active job discovery, SSE, polling fallback, terminal callbacks, and dismissal.
+  - Reduced fallback polling to 1.5 seconds for active jobs and added a 10 second idle heartbeat for active-job discovery.
+  - Completed job cards auto-dismiss after 5 seconds; failed job cards persist until retry or manual dismissal.
+  - Missing/orphaned variant row states now warn without freezing existing non-archived row edits.
+  - Cleaned backend worker lint/type drift in [`worker.py`](file:///D:/Github/muhsinmuhsy/PX/PX-B/app/modules/catalog/worker.py) and [`test_catalog_worker.py`](file:///D:/Github/muhsinmuhsy/PX/PX-B/tests/test_catalog_worker.py).
 
 ### Quality Gate Compliance:
 | Gate | Verification Command | Status |
@@ -35,10 +41,12 @@ The core product variant synchronization engine, background processing pipeline,
 | **Backend Tests** | `pytest -v` (Postgres env) | **`258 passed` / `258`** (100% green, 0 deprecation/path warnings) |
 | **Backend Linter** | `ruff check .` | **`100% clean`** (0 warnings) |
 | **Backend Types** | `mypy app` | **`100% clean`** (Success: no issues in 86 source files) |
-| **Frontend Tests** | `vitest run` | **`315 passed` / `315`** (100% green) |
+| **Frontend Tests** | `vitest run` | **`320 passed` / `320`** (100% green) |
 | **Frontend Linter** | `npm run lint` | **`100% clean`** (0 warnings) |
 | **Frontend Types** | `npm run typecheck` | **`100% clean`** (0 warnings) |
 | **Frontend Build** | `npm run build` | **`Compiled successfully`** (Production ready) |
+
+> Backend full pytest still requires Docker/Testcontainers. On 2026-05-24, full backend pytest was attempted but the local environment could not connect to `//./pipe/docker_engine`, so tests failed during fixture setup before app tests ran. Backend Ruff, Mypy, and targeted worker tests passed.
 
 ---
 
