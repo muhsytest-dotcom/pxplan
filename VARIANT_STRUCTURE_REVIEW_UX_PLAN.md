@@ -4,7 +4,7 @@ Status: Proposed next UX hardening plan
 Created: 2026-05-24
 Scope: PX-F product editor Variant Studio, Manage Variants table, maintenance panel, row filters, and copy
 
-This plan extends `VARIANT_TABLE_AND_JOB_UX_PLAN.md` after Slice 33. It focuses on making structural mismatch states understandable for non-technical merchants, especially when the system has current valid variant rows plus previous-option rows that no longer match the current options.
+This plan extends `VARIANT_TABLE_AND_JOB_UX_PLAN.md` after Slice 33. It focuses on making structural mismatch states understandable for non-technical merchants, especially when the system has current valid variant rows plus saved variants that no longer match the current options.
 
 ---
 
@@ -34,27 +34,29 @@ The UI centers continuity and safety: active variants first, editing first, safe
 
 ### Core UX Rules
 
-1. **Reduce Counts Shown Simultaneously**
+1. **Merchant Momentum (The Primary UX Goal)**
+   - Every screen, card, and state must answer: *"Can the merchant continue working immediately without hesitation?"*
+   - Avoid creating hesitation, uncertainty, repair-thinking, fear of deletion, or system anxiety. The UI should always center confidence and continuity.
+
+2. **Reduce Counts Shown Simultaneously**
    - Do NOT expose: current, archived, missing, total, review, possible, all at once.
-   - Show **ONE primary number** and **ONE secondary contextual number** (e.g., "243 active · 163 saved for history").
-   - Avoid dashboard-like layouts.
+   - Show **ONE primary number** (e.g., "243 active variants") and **ONE secondary contextual number** (e.g., "163 saved variants saved").
+   - Avoid dashboard-like tables or metric walls.
 
-2. **Remove 'Review' From Most Primary Flows**
-   - Eliminate the word "Review" (which feels like work, pending issues, or responsibility).
-   - Use "Older variants saved" and "You can manage these anytime" with a secondary `[View]` action instead of `[Review]`.
+3. **Fully Eliminate 'Review' from Merchant-Facing UX**
+   - The word "Review" psychologically implies responsibility, unfinished work, and pending issues.
+   - Replace with "Older variants saved. You can manage these anytime." and a calm, optional `[View]` button.
 
-3. **Use Empty Space Aggressively**
-   - Keep the design spacious, breathable, and focused. Do not fill every area with summaries, helper text, badges, or warnings.
-   - Sometimes this is enough:
-     ```text
-     ✅ Variants Ready
-     243 active variants
-     [Edit variants]
-     ```
+4. **Use Empty Space Aggressively**
+   - Keep the design spacious, breathable, and focused. Do not try to fill every area with helper texts, metrics, or badges. Sometimes a simple success indicator and main CTA is enough.
 
-4. **Collapse Secondary Information on Mobile**
+5. **Collapse Secondary Information on Mobile**
    - Mobile merchants want to edit, publish, manage inventory, and change prices. They do not want lifecycle management.
-   - Collapse the older variants card, archived info, advanced tools, and status explanations automatically on mobile. Include a simple `[More...]` or expand control.
+   - Collapse the saved variants card, archived info, advanced tools, and status explanations automatically on mobile under a simple expander.
+
+6. **Visually Detached Advanced Tools**
+   - Power-user features (such as recreating variants or deep repair settings) must be visually detached from everyday options.
+   - Use aggressive spacing, horizontal dividers, subdued styling, or accordion sections to place these actions far from primary CTAs (like editing variants) so they never distract.
 
 ### Merchant-First Terminology
 
@@ -113,21 +115,21 @@ Replace warning banners and technical panels with clean workflow cards.
 163 rows from previous options no longer match your current options.
 0 new combinations needed.
 
-[Archive previous-option rows and recreate variants]  [Review rows needing review]
+[Archive saved variants and recreate variants]  [View older]
 ```
 
 **Modern (Clean, Confidence-Building, Calm):**
 ```
-✅ Your Variants Are Ready
+✅ Variants Ready
 
 243 active variants ready to edit.
 
 [Continue editing]
 
 
-ℹ️ Older Variants Saved
+ℹ️ Saved Variants
 
-163 older variants saved. You can manage these anytime.
+163 saved variants saved. You can manage these anytime.
 
 [View]
 ```
@@ -152,9 +154,9 @@ Replace warning banners and technical panels with clean workflow cards.
 └─────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────┐
-│  ℹ️ Older Variants Saved                 │  ← Secondary, informational card
+│  ℹ️ Saved Variants                 │  ← Secondary, informational card
 │                                          │
-│  163 older variants saved.              │  ← Secondary count
+│  163 saved variants saved.              │  ← Secondary count
 │  You can manage these anytime.          │
 │                                          │
 │  [View]                                  │  ← Optional action (calm view)
@@ -199,7 +201,7 @@ Ready to edit
 [Edit] [Options]
 
 ℹ️ 163 Older Variants
-[Review]
+[View]
 ```
 
 **Mobile:**
@@ -220,8 +222,8 @@ Details appear only on expansion, not by default.
 ```
 Manage Variants
 
-✅ 243 variants ready
-163 older variants saved
+✅ Variants Ready (243)
+163 saved variants
 
 [Continue editing]
 ```
@@ -232,11 +234,11 @@ Manage Variants
 [Edit variants]
 
 ℹ️ Older Variants (163)
-[Review these variants]
+[View these variants]
 
 ⚙️ Advanced tools
 ├─ Recreate variants from current options
-├─ Archive older variants
+├─ Archive saved variants
 └─ Repair failed updates
 ```
 
@@ -255,7 +257,7 @@ This way:
 ```
 (No secondary content. Blank space is okay.)
 
-**Situation: Current + older variants**
+**Situation: Current + saved variants**
 ```
 ✅ 243 Active Variants
 
@@ -263,21 +265,21 @@ Ready to edit and sell.
 
 ℹ️ 163 Older Variants
 
-Kept from your previous options. Review anytime if needed.
+Saved from your previous options. Manage anytime.
 
-[Review]
+[View]
 ```
 
-**Situation: Missing variants needed**
+**Situation: Missing variants (Setup)**
 ```
-⚠️ Action Needed
+✨ Finish Setup
 
-Your options changed. Create 12 new variants to match.
+12 variants are ready to create to match your options.
 
-[Create missing variants]
+[Create variants]
 
-You can review previous variants anytime:
-[163 older variants]
+Saved variants:
+[163 saved variants]
 ```
 
 **Situation: Job in progress**
@@ -307,7 +309,7 @@ Instead of:
 ```
 Product versions
 Editing
-243 current versions / 406 total rows / 163 need review
+243 active / 163 saved for history
 ```
 
 Use:
@@ -357,7 +359,7 @@ Example observed state:
 
 The correct merchant explanation is:
 
-> All 243 current variant rows are ready. 163 rows from previous options no longer match the current setup and need review.
+> All 243 active variants are ready. 163 saved variants from previous option setups are saved for history.
 
 ---
 
@@ -372,7 +374,7 @@ Do not change these backend/domain rules while improving UX:
 - `variants: null` in lightweight snapshots means rows are not included, not that rows do not exist.
 - `orphanedCount` currently means existing occupancy rows whose combination keys do not fit the current option/value structure.
 - `include_archived=true` currently means include archived rows with active rows, not show only archived rows.
-- Product publish status and variant structure review status are separate. Storefront visibility still depends on published snapshots, not raw draft structure.
+- Product publish status and variant structure status are separate. Storefront visibility still depends on published snapshots, not raw draft structure.
 
 ---
 
@@ -412,7 +414,7 @@ Bad (technical):
 Good (merchant-friendly):
 ```
 ✗ This variant is from an older option setup. 
-Review or archive it if needed.
+Archive or view history if needed.
 ```
 
 Or even simpler, just gray it out silently with light hover help.
@@ -425,19 +427,19 @@ Translate technical/internal language into natural, confidence-building merchant
 
 | Technical/Internal | Modern Merchant Language | Example Usage | Tone |
 | --- | --- | --- | --- |
-| Orphaned variants | Older variants | "163 older variants" | Neutral, historical |
-| Removed / Removed -163 | Older variants saved | "163 older variants saved" | Reassuring |
+| Orphaned variants | Older variants | "163 saved variants" | Neutral, historical |
+| Removed / Removed -163 | Older variants saved | "163 saved variants saved" | Reassuring |
 | Structural changes detected | Your options changed | "You changed your product options" | Factual |
 | Missing combinations / Missing rows | Variants to create | "Create 12 variants" | Action-oriented |
 | Generate missing variants | Create variants | "Create variants" | Clear, setup-focused |
 | Rebuild from scratch | Recreate variants | "Recreate variants" | Advanced, clear |
 | Show archived | Row view or Include history | Segmented: "Active / Older / Archived / All" | Navigation, not technical |
 | Combination matrix | (never expose) | Don't use | — |
-| Rows needing review | Older variants | "163 older variants" | Optional, calm |
+| Older variants saved | Older variants | "163 saved variants saved" | Optional, calm |
 | Occupancy / occupancy keys | (never expose) | Use variant, option, combination as needed | — |
 | Stale active / Previous-option | Older variant | Badge/card: "Older variant" | Neutral |
 | Lifecycle status | (never expose; use context) | "Active variant", "Archived variant" | Context-specific |
-| Orphaned count | (never expose) | Show count only: "163 older variants" | Count, no jargon |
+| Orphaned count | (never expose) | Show count only: "163 saved variants" | Count, no jargon |
 
 **Rules:**
 - Keep backend/test names technical where appropriate.
@@ -452,11 +454,11 @@ Translate technical/internal language into natural, confidence-building merchant
 
 ### Manage Variants Top State (Complete Scenario)
 
-**Scenario: Current variants are complete, older variants exist but are not blocking.**
+**Scenario: Current variants are complete, saved variants exist but are not blocking.**
 
 ```
 ┌──────────────────────────────────────┐
-│ ✅ Your Variants Are Ready           │
+│ ✅ Variants Ready           │
 │                                       │
 │ 243 active variants ready to edit.    │
 │                                       │
@@ -464,9 +466,9 @@ Translate technical/internal language into natural, confidence-building merchant
 └──────────────────────────────────────┘
 
 ┌──────────────────────────────────────┐
-│ ℹ️ Older Variants Saved               │
+│ ℹ️ Saved Variants               │
 │                                       │
-│ 163 older variants saved.             │
+│ 163 saved variants saved.             │
 │ You can manage these anytime.         │
 │                                       │
 │ [View]                                │
@@ -489,7 +491,7 @@ Translate technical/internal language into natural, confidence-building merchant
 243 current variant rows are ready to edit.
 163 rows from previous options no longer match your current options.
 
-[Archive previous-option rows and recreate variants] [Review rows needing review]
+[Archive saved variants and recreate variants] [View older]
 ```
 
 **Why the new version is better:**
@@ -518,9 +520,9 @@ Replace static metrics with clean, scannable card workflow.
 **Modern (Spacious, Focus on Continuity):**
 - UI hides the counts dashboard entirely.
 - Large Primary Number: **243 active variants** (on the main card).
-- Secondary Contextual Number: **163 older variants saved** (on the secondary view card).
+- Secondary Contextual Number: **163 saved variants saved** (on the secondary view card).
 - Archived count (2) is hidden from primary view and only visible inside the `[View]` historical panel.
-- On Mobile: Only the active card is visible by default. The older variants section collapses.
+- On Mobile: Only the active card is visible by default. The saved variants section collapses.
 
 ```
 ✅ Variants Ready
@@ -541,8 +543,8 @@ Structural changes detected
 
 **Modern:**
 ```
-ℹ️ Older Variants Saved
-163 older variants
+ℹ️ Saved Variants
+163 saved variants
 
 These are saved for history.
 You can manage them anytime.
@@ -556,12 +558,12 @@ Smaller, softer, reassuring, not alarm-inducing.
 
 Old (confusing):
 ```
-[Generate missing variants (disabled)] [Review rows needing review] [Rebuild]
+[Generate missing variants (disabled)] [View older] [Rebuild]
 ```
 
 Modern (clear):
 ```
-[Continue Editing] [View Older Variants]
+[Continue Editing] [View Older]
 ```
 
 Repair tools are hidden under ⋯ Advanced.
@@ -570,7 +572,7 @@ Repair tools are hidden under ⋯ Advanced.
 
 Old:
 ```
-[Create missing variants] [Review rows needing review] [Rebuild]
+[Create variants] [View older] [Rebuild]
 ```
 
 Modern:
@@ -579,7 +581,7 @@ Modern:
 
 Create 12 variants to match your options.
 
-[Review Older Variants] (secondary)
+[View Older] (secondary)
 ```
 
 Simple, task-focused, no repair language.
@@ -594,7 +596,7 @@ Every action should communicate confidence and next step through placement and v
 | --- | --- | --- | --- | --- |
 | **Normal editing** | Save variant, change price | Table/inline controls | Default, unstressed | Full interactivity |
 | **Safe creation** | Create missing variants | Primary button (top card) | Confident, positive | Large target, clear text |
-| **Navigation/optional** | Review older variants, view options | Secondary button | Calm, optional | Available but not forced |
+| **Navigation/optional** | View older, view options | Secondary button | Calm, optional | Available but not forced |
 | **Advanced/destructive** | Recreate all, archive, repair | Hidden by default (⋯ Advanced tools) | Muted, collapsed | Requires deliberate access |
 
 **Rules:**
@@ -617,8 +619,8 @@ Every action should communicate confidence and next step through placement and v
 | --- | --- | --- | --- | --- | --- |
 | Current only | Neutral | Everything is ready | None; keep editing | View options | Advanced hidden |
 | Missing only | Action required | Setup is incomplete | **Create variants** | View options | Recreate variants collapsed |
-| Previous-option rows only | Non-blocking warning | Active variants ready, older variants saved | **View older variants** | Keep editing active variants | Archive older variants and recreate variants |
-| Missing + previous-option rows | Action required | Finish setup first, then view older variants | **Create variants** | View older variants | Recreate variants collapsed |
+| Previous-option rows only | Non-blocking warning | Active variants ready, saved variants saved | **View older** | Keep editing active variants | Archive saved variants and recreate variants |
+| Missing + saved variants | Action required | Finish setup first, then view saved variants | **Create variants** | View older | Recreate variants collapsed |
 | Archived only included | Informational | User chose to view history | Continue editing active variants or switch view | Restore selected archived variant when safe | None |
 | Active job running | Processing | Background update in progress | Wait/show progress | None | All structure actions disabled |
 | Failed job | Error | Last update failed | **Retry or review error** | Keep safe current edits if allowed | Repair collapsed |
@@ -632,7 +634,7 @@ Every action should communicate confidence and next step through placement and v
 
 **Critical Decision Points:**
 - `Create missing rows` always outranks repair when missing combinations exist.
-- `Review rows needing review` becomes primary only when there are no missing rows but previous-option rows exist.
+- `View older` becomes primary only when there are no missing rows but saved variants exist.
 - Repair/rebuild actions are **tertiary or hidden** on the everyday table.
 - Publish and row-review CTAs remain separate concerns.
 
@@ -656,8 +658,8 @@ Behavior:
 - **Older variants**: Shows active variants from previous options (no longer matching).
 - **Archived variants**: Shows archived/deleted variants.
 - The default view is always **Active variants** when entering the editor.
-- The word "row", "stale", "mismatch", or "review" is never used on tab labels or filters.
-- If usability testing shows `Needs review` is too vague, use `Previous-option rows` as the tab label and keep `Needs review` as the status badge/helper language.
+- The word "row", "stale", "mismatch", "review", or "warning" is never used on tab labels or filters.
+- Do not use `Older` or `Previous-option rows` in the tab label. Stick strictly to `Older variants`.
 
 If full classification cannot be delivered immediately, phase it:
 
@@ -673,11 +675,11 @@ Variants should show clear status badges:
 
 Active variant badge:
 - `Active`
-- Green/neutral tone.
+- Positive Green/neutral tone.
 
 Older variant badge:
 - `Older`
-- Soft neutral/gray tone (avoid warning colors like bright amber).
+- Soft neutral/gray tone (must NOT use cautionary/warning colors like amber or yellow).
 - Helper tooltip: `Saved from your previous options.`
 
 Archived variant badge:
@@ -715,7 +717,7 @@ Preferred incremental frontend helper:
 - Build a current valid value-id lookup from `options`.
 - For each loaded variant row, classify:
   - `current` if its selection IDs form one complete valid option/value combination.
-  - `needs_review` if not.
+  - `older` if not.
   - `archived` if `lifecycle_status === archived`.
 
 This classification should reuse canonical variant key helpers from `variant-domain.ts` / `variant-matrix.ts` and avoid ad hoc key parsing.
@@ -775,46 +777,47 @@ getEditabilityReason(row: ProductVariantRead, action: EditAction): EditabilityRe
 
 Define explicit severity semantics so that UI styling, banner prominence, and CTA weight derive from severity, not ad hoc design choices.
 
-| State | Severity Level | Meaning | UI Treatment | CTA Weight | Badge Tone |
-| --- | --- | --- | --- | --- | --- |
-| `current` | Neutral | All systems go; ready to edit | Quiet, normal typography | N/A | None or soft green |
-| `missing_rows` | **Action required** | Current setup incomplete | Warning banner | **Primary** | Amber |
-| `stale_active` (previous-option) | **Non-blocking warning** | Rows exist but no longer match | Informational card | Secondary | Amber |
-| `archived` | Informational | Kept for history | Muted styling | N/A | Gray |
-| `failed_job` | **Error** | Last operation failed | Error banner/panel | Tertiary (retry/review) | Red |
-| `active_job` | Processing | Background operation in progress | Progress indicator | N/A (blocked) | Blue/purple |
+| State | Severity Level | Meaning | UI Treatment | CTA Weight | Badge Tone | Visual Tone |
+| --- | --- | --- | --- | --- | --- | --- |
+| `current` / active | Neutral | Active; ready to edit | Quiet, spacious | N/A | None or soft green | Positive (Green) |
+| `missing_variants` | **Action required** | Setup is incomplete | Setup/Setup guidance card | **Primary** | Amber | Setup guidance (Amber) |
+| `stale_active` (older) | **Informational** | Saved from previous options | Informational card | N/A / Low | Soft gray / neutral | Neutral-soft (Gray) |
+| `archived` | Informational | Kept for history | Muted styling | N/A | Gray | Muted (Gray) |
+| `failed_job` | **Error** | Last operation failed | Error card/panel | Tertiary (retry) | Red | Error (Red) |
+| `active_job` | Processing | Background job running | Progress indicator | N/A (blocked) | Blue | Processing (Blue) |
 
 **Severity Determines:**
-- Color intensity and tone
-- Banner vs card vs badge presentation
-- Toast priority and dismissibility
-- CTA prominence in footer/header
-- Whether action blocks editing
+- Color intensity and tone (saved variants must use soft grays, avoiding cautionary amber/yellow)
+- Card vs badge presentation
+- CTA prominence and spacing
+- Whether actions block editing
 
-**Non-blocking Warning Philosophy:**
+**Continuity and Momentum Philosophy:**
 
-Most critical: `stale_active` (previous-option rows) are **non-blocking**.
-- Current rows remain editable.
-- Repair is not forced.
-- User can safely continue working.
-- Review is encouraged, not required.
+Most critical: Older variants (`stale_active`) are **completely non-blocking** and **informational**.
+- Active variants remain fully editable.
+- Recreating variants is not forced.
+- Merchant can continue editing and selling immediately (preserving merchant momentum).
+- Historical viewing is optional and quiet.
 
-This keeps merchant confidence high and prevents "system is broken" messaging.
+This keeps merchant confidence high, prevents "system is broken" feelings, and removes cautionary alarms from normal flows.
 
 ---
 
 ## Naming Convention Refinement
 
-Standardize terminology around merchant concepts and eliminate system-level vocabulary.
+Standardize terminology around merchant concepts, shortening names deeper in the flow to create a premium-feeling interface rhythm.
 
-| Visible UI Standard | Context | Usage / Avoid |
-| --- | --- | --- |
-| **Active variants** | Primary view tab, main card | Avoid: current, current rows, rows |
-| **Older variants** | Historical view tab, secondary card | Avoid: stale, orphaned, needs review, previous-option rows, mismatch |
-| **Archived variants** | History view tab | Avoid: deleted rows, soft-deleted, logical archives |
-| **Create variants** | Primary button (Setup) | Avoid: generate combinations, rebuild rows |
-| **Recreate variants** | Advanced settings action | Avoid: rebuild from scratch, regenerate all |
-| **View** | Calm secondary buttons | Avoid: review, fix, repair, verify |
+| Component / Context | Recommended Term | Purpose / Category | Avoid Exposing |
+| --- | --- | --- | --- |
+| **Main Card** | **Variants Ready** | Primary status summary card | Active variants ready, current rows |
+| **Secondary Card** | **Saved Variants** | Preserved older variants card | Older variants saved, review, mismatch |
+| **Tab / Filter** | **Older** | Historical selector tab | Older variants, stale, previous-options |
+| **Badge / Label** | **Older** | Historical inline badge | Stale, needs review, orphaned |
+| **History View / Tab** | **Archived** | Muted archived tab | Archived variants, deleted, logical delete |
+| **Setup Button** | **Create variants** | Primary setup button (Setup) | Generate combinations, create missing |
+| **Advanced Button** | **Recreate variants** | Advanced settings action | Rebuild from scratch, regenerate all |
+| **Secondary Action** | **View** | Calm secondary action button | Review, fix, repair, verify |
 
 **Terminology Forbidden List for Merchant UI:**
 ❌ `review` / `needs review`
@@ -876,17 +879,17 @@ Goal:
 - Make current states understandable without changing backend contracts.
 
 Tasks:
-- Update English source copy in `admin-copy.ts`.
+- Update English source copy in [admin-copy.ts](file:///d:/Github/muhsinmuhsy/PX/PX-F/lib/catalog/admin-copy.ts).
 - Replace primary UI language:
-  - `Orphaned variants` -> `Rows needing review`
-  - `Removed` -> `Needs review` or `Would be archived`
-  - `Show archived` -> `Include archived rows`
-- Add helper copy for why previous-option rows appear.
-- Update Studio, Manage Variants, and Maintenance copy consistently.
+  - `Orphaned variants` -> `Older variants`
+  - `Removed` -> `Older variants saved`
+  - `Show archived` -> Segmented tab navigation (`Active`, `Older`, `Archived`)
+- Add helper copy explaining that saved variants are kept for history.
+- Update Studio, Manage Variants, and Maintenance copy to eliminate "review", "stale", "mismatch", and "rows".
 - Add/adjust i18n copy tests.
 
 Acceptance:
-- A non-technical user can tell that current rows are safe and previous-option rows need review.
+- A non-technical user can tell that active variants are safe and saved variants are preserved.
 
 ### Phase 2: Clear Status Summary Cards
 
@@ -894,80 +897,69 @@ Goal:
 - Replace developer-style metrics with merchant status summaries.
 
 Tasks:
-- Add a top summary component for Manage Variants:
-  - current rows ready,
-  - missing rows needed,
-  - rows needing review,
-  - archived rows included when relevant.
-- Drive the summary primary CTA from the Recommended Next Action Map.
-- Update Studio right panel to use `Needs review` language.
-- Hide advanced repair metrics until maintenance is opened.
+- Add a top summary card for Manage Variants:
+  - Active variants ready (prominent number)
+  - Variants to create (if missing)
+  - Older variants saved (informational card with `[View]` button, hidden on mobile by default)
+- Drive CTAs strictly from the Recommended Next Action Map.
+- Update Studio right panel to use `Older` and `Saved` language.
+- Hide all advanced repair metrics.
 
 Acceptance:
-- The first visible message says what happened and what to do next.
+- Main screen shows confidence, clear counts, and lets the user continue editing immediately.
 
-### Phase 3: Row View Filter
+### Phase 3: Variant View Filter
 
 Goal:
-- Make row visibility obvious.
+- Make variant visibility obvious.
 
 Tasks:
-- Replace `Show archived` checkbox with segmented row view:
-  - `Current`
-  - `Needs review`
-  - `Archived`
-  - `All`
-- If per-row orphan classification is not yet ready, start with:
-  - `Active`
-  - `Archived`
-  - `All`
-  and add `Needs review` in Phase 5.
-- Persist row view only locally unless product requirements need URL state.
+- Replace the `Show archived` checkbox with a segmented tab selector:
+  - `Active variants`
+  - `Older variants`
+  - `Archived variants`
+- Persist tab selection only locally unless product requirements need URL query state.
 
 Acceptance:
-- Users understand why active and archived rows appear together.
+- Users can toggle views calmly, understanding which variants match current options and which are historical.
 
-### Phase 4: Repair Flow Refinement
+### Phase 4: Recreate Flow Refinement
 
 Goal:
-- Make repair actions safe and understandable.
+- Make advanced recreating actions safe and visually detached.
 
 Tasks:
 - Rename rebuild action to explain outcome:
-  - `Archive previous-option rows and recreate variants`
+  - `Recreate variants`
 - Add confirmation copy:
-  - how many current rows stay,
-  - how many previous-option rows will be archived,
-  - whether media bindings or attributes are affected.
-- If `missingCount === 0`, do not show a disabled generate button as the primary action.
-- Primary action for previous-option-row-only state should be `Review rows needing review`.
-- Add a `Why am I seeing this?` helper to the review summary and Studio.
-- Apply the safe action hierarchy so destructive repair actions are danger-tertiary and collapsed by default.
+  - how many active variants stay,
+  - how many saved variants will remain archived,
+  - whether media bindings are affected.
+- If `missingCount === 0`, do not show a disabled button as the primary action.
+- Primary action for incomplete setup state is simply to continue editing. Recreate is hidden under advanced tools.
+- Place all advanced recreating tools behind a visual divider or collapsible accordion far from primary CTAs to prevent accidental clicks.
 
 Acceptance:
-- Users understand that history is preserved and what the repair action changes.
+- Users understand history is preserved, and advanced tools do not clutter the page.
 
-### Phase 5: Per-Row Classification
+### Phase 5: Per-Variant Classification
 
 Goal:
-- Show status on every variant row.
+- Show status on every variant.
 
 Tasks:
 - Add a reusable classification helper.
-- Add reusable editability helpers derived from row status.
-- Feed row status into `VariantIdentityCell` or `VariantTableRow`.
+- Add reusable editability helpers in `variant-capabilities.ts`.
+- Feed status into `VariantIdentityCell` or `VariantTableRow`.
 - Add badges:
-  - `Current`
-  - `Needs review`
+  - `Active`
+  - `Older`
   - `Archived`
-- Group rows when `All` is selected.
-- Keep selection/bulk updates limited to editable/current active rows by default.
+- Group variants under clear headings if combined view is active.
+- Keep selection/bulk updates limited to editable active variants by default.
 
 Acceptance:
-- Previous-option rows are visible only in the expected view/group and clearly labeled.
-
-Note:
-- This phase is intentionally later because it is the most technically invasive. Copy, summary hierarchy, row view, and repair wording deliver the largest UX improvement first.
+- Older and archived variants are labeled clearly and edit capabilities are locked safely with friendly tooltips.
 
 ---
 
@@ -990,16 +982,15 @@ Use this only near publish-related UI or when structure changes are pending publ
 Frontend unit/component tests:
 
 - `product-variants-section.test.tsx`
-  - summary for current rows + needs-review rows,
-  - row view segmented control,
-  - archived rows are not implied by `Show archived` wording,
-  - default view is `Current` when review/archive rows exist,
-  - maintenance remains secondary.
+  - summary for Active + Older variants,
+  - variant view segmented selector tabs,
+  - default view is `Active variants` when older or archived variants exist,
+  - advanced maintenance panel is visually detached and secondary.
 
 - `variant-structure-studio.test.tsx`
-  - previous-option-row-only state shows `Review rows needing review`, not disabled generate,
-  - Studio right panel says `Needs review`, not `Removed`,
-  - missing-row state still shows create-missing primary action.
+  - incomplete setup state does not show a disabled generate button,
+  - Studio right panel says `Older variants saved` (or simply `Older`), not `Removed`,
+  - incomplete setup state still shows create-variants primary action.
 
 - `variant-matrix.test.ts`
   - per-row classification helper if added to catalog lib.
@@ -1204,7 +1195,7 @@ Severity indicates priority and visual weight. Blocking behavior indicates wheth
 | --- | --- | --- | --- | --- | --- |
 | `current` | No | No | No | None | Full controls enabled |
 | `stale_active` | No | No | No | Badge only | Full controls enabled |
-| `incomplete_draft` | No | No | No | Warning card | Primary action enabled |
+| `incomplete_draft` | No | No | No | Setup card | Primary action enabled |
 | `active_job` | **Yes, partial** | **Yes** | **Partial** | Progress bar | Controls disabled, poll active |
 | `failed_job` | No | **Yes** | No (enable retry) | Error banner | Retry CTA enabled |
 | `hard_conflict` (future) | **Yes, full** | **Yes** | **Yes** | Modal/overlay | Forced user action |
@@ -1261,7 +1252,7 @@ Clarify control state meaning for consistent UX and accessibility.
 | --- | --- | --- | --- |
 | SKU input on stale row | Disabled | "Stale rows cannot be edited per policy" | Grayed, explain in helper text |
 | Save button during job | Blocked | "Cannot save; job is running" | Grayed with spinner, will enable when job finishes |
-| Rebuild action (safe flow) | Hidden | "Not relevant; no previous-option rows exist" | Not rendered; not in tab order |
+| Rebuild action (safe flow) | Hidden | "Not relevant; no saved variants exist" | Not rendered; not in tab order |
 | Publish button with active job | Blocked | "Cannot publish while rebuild running" | Grayed with progress, will enable when job finishes |
 
 **Important Distinction:**
@@ -1363,6 +1354,34 @@ Keep product-wide blocking for now:
 
 ---
 
+## Progressive Prominence Reduction (Preserving Focus)
+
+To prevent structural anxiety and preserve merchant focus, the visibility and prominence of historical data is reduced progressively as the merchant moves deeper into their editing flow:
+
+1. **Entry Screen (High-Level Summary)**:
+   - Older variants saved are presented in a quiet, secondary card (`ℹ️ Saved Variants`).
+   - The card collapses automatically on mobile.
+2. **Variant Table (Working Space)**:
+   - The card disappears.
+   - Historical variants are represented only as clean filter tabs (*Active (243)*, *Older (163)*, *Archived (2)*).
+   - Only the selected tab's variants are visible (default is Active).
+3. **Individual Editing Flow**:
+   - The history is completely hidden. The merchant is focused 100% on editing and publishing active variants.
+
+---
+
+## Animation & Motion Philosophy
+
+Modern, premium merchant software (like Shopify, Notion, or Linear) relies on motion design for visual continuity and cognitive simplicity. The frontend should implement:
+
+- **Soft Expand/Collapse**: Smooth transitions (e.g. 200ms ease-out) when expanding advanced tools or toggling accordion sections.
+- **Optimistic UI Updates**: Immediate UI feedback (e.g. state changes to "Saved" or local count updates) while backend requests execute in the background.
+- **Cross-Fade View Switching**: Soft 150ms opacity fades when toggling between filter tabs (*Active*, *Older*, *Archived*) to make list changes feel continuous rather than abrupt.
+- **Skeleton Loaders**: Quiet, static background-color pulsing skeletons instead of alarming spinners, preserving merchant momentum during reads.
+- **Visual Save Confirmations**: Micro-animations on inline row success badges (a soft green flash or check animation) to build high merchant confidence.
+
+---
+
 ## Finite State Machine Architecture (Future Direction)
 
 **Not for immediate implementation. For architectural awareness.**
@@ -1424,7 +1443,7 @@ type VariantReviewFSM = {
 - The UI never requires users to understand `orphaned`, `matrix`, `snapshot`, `combination_key`, or `lifecycle_status`.
 - The first message in Manage Variants explains:
   - active variants,
-  - older variants saved,
+  - saved variants,
   - next action.
 - Default table view is `Current` when rows needing review or archived rows exist.
 - `Older variants` and `Archived` remain separate states internally.
@@ -1432,11 +1451,11 @@ type VariantReviewFSM = {
 - A checked control never implies “show only archived” when it actually means “include archived.”
 - Destructive/advanced actions are clearly separated from everyday editing.
 - Empty, loading, current, missing, needs-review, archived, and failed states are visually distinct.
-- Current rows stay editable when previous-option rows need review unless a real backend safety rule blocks editing.
+- Current rows stay editable when saved variants need review unless a real backend safety rule blocks editing.
 - Row editability is centralized and testable; components do not invent their own rules.
 - **Primary CTAs follow the Recommended Next Action Map** — state → action mapping is deterministic and testable.
 - Severity levels determine visual treatment: color, banner type, CTA weight, whether actions are blocked.
-- Non-blocking warnings (older variants) do not prevent active variant editing or suggest system failure.
+- Non-blocking warnings (saved variants) do not prevent active variant editing or suggest system failure.
 - Centralized selectors (`canEditRow()`, `canBulkEditRows()`, etc.) are the single source of truth for permissions.
 - Tests verify that all components use centralized selectors; ad hoc permission logic is forbidden.
 - Naming is consistent by context: tabs use "Active variants" / "Older variants" / "Archived variants", buttons use "View", labels use "Older" / "Active" / "Archived".
@@ -1456,6 +1475,8 @@ type VariantReviewFSM = {
 
 ### Highest Priority: Emotional & Psychological UX
 
+✅ **Merchant Momentum First**: Every page and state preserves momentum; merchants can edit and save without hesitation or fear of structural deletion.
+
 ✅ **Merchants understand the entire page in 3 seconds** without reading explanations or grasping system concepts.
 
 ✅ **First visible content communicates two things only:**
@@ -1463,30 +1484,30 @@ type VariantReviewFSM = {
 2. "What to do next"
 
 ✅ **Language is always merchant-natural, never system-technical:**
-- ✅ Use: "243 active variants", "Older variants kept safely", "Create missing variants"
-- ❌ Never expose: `orphaned`, `stale_active`, `lifecycle`, `occupancy`, `rebuild`, `structural`, `matrix`
+- ✅ Use: "243 active variants", "Older variants saved", "Create variants"
+- ❌ Never expose: `review`, `stale`, `orphaned`, `mismatch`, `previous-option`, `structural`, `row`, `rows`, `matrix`, `occupancy`
 
-✅ **Visual tone is calm and confidence-building**, not warning-heavy or alarming:
-- ✅ Checkmark icons (✅), informational cards (ℹ️), soft colors
-- ❌ Warning banners (⚠️), error tones, repair-feeling sections (unless actual failure)
+✅ **Visual tone is calm and confidence-building**, not cluttered or alarming:
+- ✅ Checkmark icons (✅), informational cards (ℹ️), soft gray neutral tones for saved variants
+- ❌ Setup guidance cards (⚠️) or amber cautionary colors for saved variants (reserve amber warning only for actual missing setup combinations)
 
 ✅ **Normal editing dominates the screen** — merchants feel: "Everything is okay. Keep working."
-- Primary visible actions: [Edit], [Continue], [Create missing variants]
-- Secondary actions: [Review], [Details], [See options]
-- Advanced/destructive actions: Hidden under [⋯ Advanced Tools]
+- Primary visible actions: [Edit], [Continue], [Create variants]
+- Secondary actions: [View], [Details], [See options] (fully eliminate "Review" button text)
+- Advanced/destructive actions: Visually detached far from main flow, hidden under [⋯ Advanced Tools]
 
-✅ **Repair/destructive tools are hidden by default** — never expose on page load.
+✅ **Advanced tools are hidden and visually detached** — never place recreate/advanced actions near primary editing CTAs; use spacers, lines, or accordions.
 
-✅ **Text density is reduced 40–50%** from current version:
-- Replace dense warning paragraphs with short info cards
-- Replace metric tables with scannable card layout
+✅ **Text density is reduced 40–50%**:
+- Replace dense paragraphs with short info cards
+- Replace metric tables with single primary count and single secondary count
 - Use progressive disclosure for complex information
 
-✅ **Mobile-first simplicity** — all complexity hidden until explicitly expanded.
+✅ **Mobile-first simplicity** — all complexity (including saved variants card and advanced tools) collapses automatically on mobile.
 
 ✅ **Modern card-based layout** (Shopify-like, not admin-dashboard):
 - Safe/ready state in large, prominent card
-- Secondary info in smaller information card
+- Secondary info in smaller soft-neutral card
 - Advanced options completely hidden/collapsed
 
 ✅ **Terminology is consistent in merchant UI:**
@@ -1499,31 +1520,31 @@ type VariantReviewFSM = {
 
 ✅ The UI never exposes to merchants: `orphaned`, `matrix`, `snapshot`, `combination_key`, `lifecycle_status`, `operational state`, `stale_active`, `occupancy`.
 
-✅ Default table view is `Active` (or `Current`) when older/archived variants exist.
+✅ Default table view is `Active variants` when older/archived variants exist.
 
-✅ `Older variants` and `Archived` remain separate row states internally (for filtering, bulk actions, analytics).
+✅ `Older variants` and `Archived variants` remain separate states internally (for filtering, bulk actions, analytics).
 
-✅ Row editability is centralized in `canEditRow()`, `canBulkEditRows()` selectors — **no ad hoc permission logic in components**.
+✅ Editability is centralized in `canEditRow()`, `canBulkEditRows()` selectors — **no ad hoc permission logic in components**.
 
 ✅ **Primary CTAs follow the Recommended Next Action Map** — state automatically determines the primary action.
 
-✅ Severity levels drive visual treatment (color, prominence, CTA weight, blocking behavior).
+✅ Severity and visual tone drive visual treatment (color, prominence, CTA weight, blocking behavior).
 
-✅ Older variants (`stale_active`) are **always non-blocking** — merchants can edit current variants even with older variants present.
+✅ Older variants (`stale_active`) are **always non-blocking** — merchants can edit active variants even with saved variants present.
 
 ✅ Naming is consistent by context:
 - Tabs/filters: "Active variants", "Older variants", "Archived variants"
 - Inline badges/labels: "Active", "Older", "Archived"
-- Tooltips/help: "Created from previous product options"
+- Tooltips/help: "Saved from your previous options"
 
-✅ **Visible UX is simple; hidden architecture is strong** — engineering excellence should be transparent through effortless merchant experience.
+✅ **Visible UX is simple; hidden architecture is strong** — engineering excellence is transparent through effortless merchant experience.
 
 ---
 
 ## Open Questions
 
-1. Should `Needs review` include archived rows that no longer match current options, or should archived rows always stay only under `Archived`?
-2. Should the default table view be `Current` when previous-option rows exist?
+1. Should `Older` include archived rows that no longer match current options, or should archived rows always stay only under `Archived`?
+2. Should the default table view be `Current` when saved variants exist?
 3. Should row-view state persist in URL query params for refresh/shareability?
 4. Do we need a backend `row_status` projection for performance once products have thousands of variants?
 5. Should stale active rows allow direct SKU/price/stock edits, or should they be review/archive-first only?
