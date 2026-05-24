@@ -903,8 +903,74 @@ Environment-limited verification:
 
 Pending follow-up:
 - Continue with the next approved UX phases:
-  - row-level save confidence states,
   - explicit soft vs hard refresh reconciliation,
-  - `VariantIdentityCell` and combined Variant identity column,
-  - selection-based bulk editing.
+  - deeper repair/maintenance panel separation,
+  - thumbnail media binder.
+
+## Completed Slice 28: Variant Table Trust and Inventory Workspace Redesign
+
+Status: Complete on 2026-05-24
+
+Summary:
+- Implemented a larger frontend UX slice from `VARIANT_TABLE_AND_JOB_UX_PLAN.md` focused on making the variant table understandable for non-technical shop managers.
+- Converted the table from separate option columns into a single strong "Variant" identity column.
+- Added row-level save confidence states and selection-based bulk editing.
+- Added unsaved-change exit protection for dirty variant rows.
+
+Frontend:
+- Added [`variant-identity-cell.tsx`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/product-editor/variant-identity-cell.tsx) to centralize variant identity rendering with ordered value chips, color/image visuals, fallback text chips, and archived-state styling.
+- Updated [`variant-table-row.tsx`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/product-editor/variant-table-row.tsx) so each row now reads as one sellable product version:
+  - selection checkbox,
+  - combined Variant identity,
+  - SKU,
+  - price,
+  - stock,
+  - visibility,
+  - row save/status actions.
+- Added row save states in [`product-variant-workspace.ts`](file:///D:/Github/muhsinmuhsy/PX/PX-F/lib/catalog/product-variant-workspace.ts): `pristine`, `dirty`, `saving`, `saved`, and `failed`.
+- Wired row save-state ownership through [`admin-product-edit-form.tsx`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/admin-product-edit-form.tsx) and [`use-product-variant-actions.ts`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/product-editor/use-product-variant-actions.ts):
+  - edits mark rows as `dirty`,
+  - saves mark rows as `saving`,
+  - successful saves show temporary `Saved`,
+  - failed saves persist as `Could not save`.
+- Added `beforeunload` protection when variant rows have unsaved draft changes.
+- Replaced the always-visible filtered/page bulk form with a selection-only bulk bar:
+  - bulk controls appear only after rows are selected,
+  - the bar shows a clear selected-count summary,
+  - bulk updates apply only to selected visible rows.
+- Cleaned the stale unused `text` parameter in [`api.ts`](file:///D:/Github/muhsinmuhsy/PX/PX-F/lib/catalog/api.ts), removing the previous ESLint warning.
+- Added i18n-backed copy for the new table, selection, archived restore, loading, and row save-state labels in [`admin-copy.ts`](file:///D:/Github/muhsinmuhsy/PX/PX-F/lib/catalog/admin-copy.ts).
+
+Tests:
+- Updated [`product-variants-section.test.tsx`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/product-editor/__tests__/product-variants-section.test.tsx) for:
+  - selection-only bulk editing,
+  - archived rows with the new identity cell,
+  - table flow compatibility after the combined Variant column change.
+- Updated [`admin-product-edit-form.test.tsx`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/__tests__/admin-product-edit-form.test.tsx) so bulk updates require explicit row selection.
+- Existing action-hook coverage continues to validate guarded variant action behavior.
+
+Important reasoning:
+- The main table now follows the user mental model: one row equals one sellable version of the product.
+- Selection-only bulk editing reduces accidental mass updates caused by hidden filter/page scope.
+- Row-level save indicators address "did it save?" anxiety without introducing autosave race conditions.
+- Row draft state remains owned by the product editor/table layer; backend API contracts did not need to change.
+
+API, database, and schema changes:
+- None.
+
+Verification completed:
+- Frontend focused variant/editor tests: `43 passed`.
+- Frontend full test suite: `320 passed` out of `320`.
+- Frontend ESLint: passed with zero warnings.
+- Frontend TypeScript: passed (`tsc --noEmit`).
+- Frontend i18n check: passed for 10 locales.
+- Frontend production build: compiled successfully.
+- Backend targeted worker tests: `8 passed`.
+- Backend targeted worker Ruff: passed (`All checks passed!`).
+- Backend targeted worker Mypy: passed (`Success: no issues found in 1 source file`).
+
+Pending follow-up:
+- Continue with explicit soft vs hard refresh reconciliation for dirty row state.
+- Continue the repair/maintenance panel separation so advanced repair tools are visually secondary.
+- Continue the 1-click media binder after table save and selection flows are stable.
 

@@ -1,14 +1,14 @@
 # Agent Handoff and Continuity
 
-Last updated: 2026-05-20
+Last updated: 2026-05-24
 
 Read this document first, then `00_START_HERE.md`, `WHAT-DONE.md`, and the architecture/design specs. Treat this file, `WHAT-DONE.md`, and the live code as the authoritative source of truth for the current state.
 
 ---
 
-## 1. Latest Implementation Status (Slice 27 Variant Job UX Controller & Safe Editing Unlock Complete)
+## 1. Latest Implementation Status (Slice 28 Variant Table Trust and Inventory Workspace Redesign Complete)
 
-The core product variant synchronization engine, background processing pipeline, multi-tenant boundaries, logical archiving/retention strategies, frontend/backend option deletion optimistic concurrency guard contracts, and first variant UX stabilization slice are **implemented and validated**.
+The core product variant synchronization engine, background processing pipeline, multi-tenant boundaries, logical archiving/retention strategies, frontend/backend option deletion optimistic concurrency guard contracts, and the first two variant table UX modernization slices are **implemented and validated**.
 
 ### Completed Slices (Slices 1 to 25 & Guard Alignment):
 - **Core Domain & Identity**: Canonical option combination keys (locale-independent sorted hashes) and active-only database-level uniqueness constraints.
@@ -34,19 +34,27 @@ The core product variant synchronization engine, background processing pipeline,
   - Completed job cards auto-dismiss after 5 seconds; failed job cards persist until retry or manual dismissal.
   - Missing/orphaned variant row states now warn without freezing existing non-archived row edits.
   - Cleaned backend worker lint/type drift in [`worker.py`](file:///D:/Github/muhsinmuhsy/PX/PX-B/app/modules/catalog/worker.py) and [`test_catalog_worker.py`](file:///D:/Github/muhsinmuhsy/PX/PX-B/tests/test_catalog_worker.py), while preserving explicit SQLModel model-registry import side effects required for worker foreign-key resolution.
+- **Variant Table Trust and Inventory Workspace Redesign (Slice 28)**:
+  - Added [`variant-identity-cell.tsx`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/product-editor/variant-identity-cell.tsx) as the reusable identity renderer for ordered option chips, color/image visuals, archived state, and readable "Blue / XL" style row identity.
+  - Updated the variant table to use one combined "Variant" column instead of separate option columns, so each row reads as one sellable product version.
+  - Added row save confidence states (`pristine`, `dirty`, `saving`, `saved`, `failed`) through [`product-variant-workspace.ts`](file:///D:/Github/muhsinmuhsy/PX/PX-F/lib/catalog/product-variant-workspace.ts), [`admin-product-edit-form.tsx`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/admin-product-edit-form.tsx), and [`use-product-variant-actions.ts`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/product-editor/use-product-variant-actions.ts).
+  - Added unsaved-change exit protection for dirty variant rows.
+  - Replaced always-visible filtered/page bulk editing with selection-only bulk editing and clear selected-count copy.
+  - Added i18n-backed labels for table identity, selection, save states, loading, archived restore, and bulk selection copy.
+  - Removed the previous frontend ESLint warning by deleting the unused `text` parameter from the auth refresh helper in [`api.ts`](file:///D:/Github/muhsinmuhsy/PX/PX-F/lib/catalog/api.ts).
 
 ### Quality Gate Compliance:
 | Gate | Verification Command | Status |
 | :--- | :--- | :--- |
-| **Backend Tests** | `pytest -v` (Postgres env) | **`258 passed` / `258`** (100% green, 0 deprecation/path warnings) |
-| **Backend Linter** | `ruff check .` | **`100% clean`** (0 warnings) |
-| **Backend Types** | `mypy app` | **`100% clean`** (Success: no issues in 86 source files) |
+| **Backend Tests** | `w.venv` targeted worker tests | **`8 passed` / `8`** for the worker registry regression path |
+| **Backend Linter** | targeted `ruff check app/modules/catalog/worker.py tests/test_catalog_worker.py` | **`100% clean`** (0 warnings) |
+| **Backend Types** | targeted `mypy app/modules/catalog/worker.py` | **`100% clean`** (Success: no issues in 1 source file) |
 | **Frontend Tests** | `vitest run` | **`320 passed` / `320`** (100% green) |
 | **Frontend Linter** | `npm run lint` | **`100% clean`** (0 warnings) |
 | **Frontend Types** | `npm run typecheck` | **`100% clean`** (0 warnings) |
 | **Frontend Build** | `npm run build` | **`Compiled successfully`** (Production ready) |
 
-> Backend full pytest still requires Docker/Testcontainers. On 2026-05-24, full backend pytest was attempted but the local environment could not connect to `//./pipe/docker_engine`, so tests failed during fixture setup before app tests ran. Backend Ruff, Mypy, and targeted worker tests passed.
+> Backend full pytest requires Docker/Testcontainers. For Slice 28, backend code was not changed; focused backend worker tests/lint/types were run through `PX-B/w.venv` to keep the recent worker registry fix covered without rerunning the full Docker-backed suite.
 
 ---
 
@@ -82,15 +90,19 @@ To ensure future features (such as **Orders**, **Carts**, **Inventory**, or **Sp
 
 ## 3. What is Pending (Future Hardening Slices)
 
-The current system is fully ready for deployment. The remaining roadmap items consist of new E2E test suites and optional observability utilities:
-1. **Richer E2E/API Test Coverage**:
+The current system is ready for the next UX hardening slice. The remaining roadmap items are:
+1. **Variant Editor UX Follow-up**:
+   * Add explicit soft vs hard refresh reconciliation for dirty/failed row state.
+   * Move advanced repair and maintenance tools farther away from the everyday table workflow.
+   * Add the 1-click variant media binder once row save and selection flows remain stable.
+2. **Richer E2E/API Test Coverage**:
    * Add Playwright or custom integration test suites confirming template Apply + Quota Failures end-to-end.
    * Add automated browser-level E2E tests for media rebinding after product rebuilds.
    * Add a unified frontend-backend integration test covering the full merchant path: *Admin Options Setup → Job Generation → Snapshot Preview → Snap Publish → Storefront Verification*.
-2. **Advanced Observability**:
+3. **Advanced Observability**:
    * Setup production Prometheus metrics and custom alert policies for SSE reconnection rates.
    * Create dedicated server health views and job queue operational drilldowns.
-3. **Stale Dead-Code Cleanup**:
+4. **Stale Dead-Code Cleanup**:
    * Clean up any leftover helper files or legacy mock classes that became obsolete once the logical soft-delete archiving patterns finalized.
 
 ---
