@@ -1194,3 +1194,51 @@ Pending follow-up:
 - Manually retry the exact browser workflow: create product -> apply Bag template -> generate variants -> edit prices -> publish -> set Blue color -> add Green value.
 - Add broader browser-level E2E coverage for the full admin setup -> generate -> edit option visuals -> media bind -> publish -> storefront verification path.
 
+## Completed Slice 33: Stable Variant Table Refresh After Row Saves
+
+Status: Complete on 2026-05-24
+
+Summary:
+- Fixed the merchant-facing issue where saving a variant row could make the variant table disappear and show the empty/generate card.
+- Root cause: the backend authoritative snapshot endpoint intentionally returns `variants: null` in lightweight mode, but the frontend treated that as an empty variant list and cleared the table.
+- The table now stays stable during normal row saves and other lightweight structure refreshes.
+
+Frontend:
+- Updated [`admin-product-edit-form.tsx`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/admin-product-edit-form.tsx):
+  - introduced synchronized variant-row state ownership with `variantsRef`,
+  - stopped clearing rows when a lightweight snapshot returns `variants: null`,
+  - preserved dirty row drafts while updating clean drafts to fresh server baselines,
+  - added row merge support so variant save and bulk update responses update the visible table immediately.
+- Updated [`use-product-variant-actions.ts`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/product-editor/use-product-variant-actions.ts):
+  - single-row variant saves now merge the returned updated row before snapshot reconciliation,
+  - selected bulk updates merge returned rows before the lightweight snapshot refresh.
+- Updated [`product-variants-section.tsx`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/product-editor/product-variants-section.tsx):
+  - empty cards now require `totalVariants === 0` instead of trusting a transient local empty array,
+  - nonzero totals with unloaded rows show the table loading state,
+  - variant page load errors now render a retry path instead of silently falling through.
+
+Tests:
+- Added an editor regression proving a lightweight snapshot refresh after saving a row keeps the table visible and reflects the saved value.
+- Added a table regression proving a nonzero `totalVariants` value does not render the empty card while rows are not loaded.
+
+Important reasoning:
+- `variants: null` means "rows are not included in this snapshot", not "there are no rows".
+- Normal row saves should behave like modern inventory editors: update the row in place, show saved feedback, and keep the table, filters, and surrounding workflow stable.
+- Empty states should only appear from authoritative empty data, not from temporary table-loading state.
+
+API, database, and schema changes:
+- None.
+
+Verification completed:
+- Frontend focused variant/editor/action tests: `51 passed`.
+- Frontend full test suite: `328 passed`.
+- Frontend ESLint: passed with zero warnings.
+- Frontend TypeScript: passed (`tsc --noEmit`).
+- Frontend i18n check: passed for 10 locales.
+- Frontend production build: compiled successfully.
+- Backend Ruff: passed (`All checks passed!`).
+- Backend Mypy: passed (`Success: no issues found in 86 source files`).
+
+Environment/user-directed verification note:
+- Backend pytest was skipped because this slice changed no backend code, per user instruction.
+
