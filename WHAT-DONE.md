@@ -1143,3 +1143,54 @@ Pending follow-up:
 - Consider native media-to-option-value binding only if product requirements need one image to apply to every variant sharing a color/value.
 - Add broader browser-level E2E coverage for the full admin setup -> generate -> media bind -> publish -> storefront verification path.
 
+## Completed Slice 32: Structure Guard Payload Fix for Option Value Editing
+
+Status: Complete on 2026-05-24
+
+Summary:
+- Fixed the real merchant workflow issue where editing an option value visual, such as setting Blue's color, or adding a new value, such as Green, returned `422 Unprocessable Content`.
+- Root cause: backend option and option-value structural endpoints require `expected_version` and `expected_hash` in the request body, but some frontend create/update paths were sending only the changed fields.
+- The issue appeared after variant generation/publish because the product structure guard became meaningful, and FastAPI rejected the incomplete payload before catalog service logic ran.
+
+Frontend:
+- Updated [`types.ts`](file:///D:/Github/muhsinmuhsy/PX/PX-F/lib/catalog/types.ts) so option and option-value create/update request types explicitly include `ProductStructureGuardRequest`.
+- Updated [`use-product-variant-actions.ts`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/product-editor/use-product-variant-actions.ts):
+  - create option now sends the current structure guard,
+  - rename option now sends the current structure guard,
+  - reorder option now sends the current structure guard,
+  - add option value now sends the current structure guard,
+  - edit option value name/color/image now sends the current structure guard,
+  - missing guards now stop early with the existing refresh-required UI message instead of making invalid API calls.
+- Updated [`api.test.ts`](file:///D:/Github/muhsinmuhsy/PX/PX-F/lib/catalog/__tests__/api.test.ts) so API payload tests assert structure guards are sent for option/value writes.
+- Updated [`use-product-variant-actions.test.ts`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/product-editor/__tests__/use-product-variant-actions.test.ts) with regressions for:
+  - adding a new value like Green with color metadata,
+  - editing an existing value like Blue to add a color.
+
+Backend:
+- Backend API/schema behavior was already correct and intentionally strict.
+- Cleaned the generated initial Alembic migration import/type header in [`ecee70d7cf35_initial.py`](file:///D:/Github/muhsinmuhsy/PX/PX-B/alembic/versions/ecee70d7cf35_initial.py) so backend Ruff remains green. No migration operation changed.
+
+Important reasoning:
+- Option/value edits are structural writes because they can change variant combinations and published snapshot safety.
+- The frontend must send the same optimistic structure guard contract for creates/updates as it already did for deletes, generate, rebuild, templates, and copy.
+- This keeps concurrency protection intact while allowing the normal UI workflow to succeed.
+
+API, database, and schema changes:
+- No backend API or database changes.
+- Frontend request types were corrected to match the existing backend API contract.
+
+Verification completed:
+- Frontend targeted API/action/editor tests: `80 passed`.
+- Frontend full test suite: `326 passed` out of `326`.
+- Frontend ESLint: passed with zero warnings.
+- Frontend TypeScript: passed (`tsc --noEmit`).
+- Frontend i18n check: passed for 10 locales.
+- Frontend production build: compiled successfully.
+- Backend targeted option value visual metadata test: `1 passed`.
+- Backend Ruff: passed (`All checks passed!`).
+- Backend Mypy: passed (`Success: no issues found in 86 source files`).
+
+Pending follow-up:
+- Manually retry the exact browser workflow: create product -> apply Bag template -> generate variants -> edit prices -> publish -> set Blue color -> add Green value.
+- Add broader browser-level E2E coverage for the full admin setup -> generate -> edit option visuals -> media bind -> publish -> storefront verification path.
+

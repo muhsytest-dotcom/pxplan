@@ -6,7 +6,7 @@ Read this document first, then `00_START_HERE.md`, `WHAT-DONE.md`, and the archi
 
 ---
 
-## 1. Latest Implementation Status (Slice 31 Repair and Maintenance Panel Separation Complete)
+## 1. Latest Implementation Status (Slice 32 Structure Guard Payload Fix Complete)
 
 The core product variant synchronization engine, background processing pipeline, multi-tenant boundaries, logical archiving/retention strategies, frontend/backend option deletion optimistic concurrency guard contracts, and the first three variant table UX modernization slices are **implemented and validated**.
 
@@ -61,20 +61,26 @@ The core product variant synchronization engine, background processing pipeline,
   - Kept "Generate missing variants" visible as the primary safe action while moving revert, rebuild, detached-media counts, orphan counts, and removed-attribute metrics behind "Open maintenance".
   - Removed the old inline table metric helper and removed repair metrics from the empty variants state.
   - Added i18n-backed maintenance copy and frontend tests for maintenance-gated repair actions.
+- **Structure Guard Payload Fix for Option Value Editing (Slice 32)**:
+  - Fixed `422 Unprocessable Content` on normal option value workflows after generation/publish, including setting Blue's color and adding a new Green value.
+  - Corrected frontend option and option-value create/update request types to include `expected_version` and `expected_hash`.
+  - Updated create option, rename option, reorder option, add option value, and edit option value name/color/image actions to send the current structure guard.
+  - Added frontend regressions proving option value create/update payloads include the guard.
+  - Cleaned the generated initial Alembic migration import/type header so backend Ruff stays green; migration operations were unchanged.
 
 ### Quality Gate Compliance:
 | Gate | Verification Command | Status |
 | :--- | :--- | :--- |
-| **Backend Tests** | `w.venv` targeted media tests | **`2 passed` / `2`** for exact media binding coverage |
+| **Backend Tests** | `w.venv` targeted option value metadata test | **`1 passed` / `1`** for visual option value coverage |
 | **Backend Linter** | `ruff check .` | **`100% clean`** (0 warnings) |
 | **Backend Types** | `mypy app` | **`100% clean`** (Success: no issues in 86 source files) |
-| **Frontend Tests** | `vitest run` | **`324 passed` / `324`** (100% green) |
+| **Frontend Tests** | `vitest run` | **`326 passed` / `326`** (100% green) |
 | **Frontend Linter** | `npm run lint` | **`100% clean`** (0 warnings) |
 | **Frontend Types** | `npm run typecheck` | **`100% clean`** (0 warnings) |
 | **Frontend i18n** | `npm run i18n:check` | **Passed for 10 locales** |
 | **Frontend Build** | `npm run build` | **`Compiled successfully`** (Production ready) |
 
-> Backend full pytest was attempted with `PX-B/w.venv` for Slice 31, but timed out after 5 minutes in this environment before producing a final summary. Backend code was not changed in this slice; targeted backend media tests, backend Ruff, and backend Mypy passed.
+> Backend full pytest was not re-run for Slice 32 after the previous repeated 5-minute environment timeouts. Targeted backend option-value metadata coverage passed, and backend Ruff/Mypy gates are clean.
 
 ---
 
