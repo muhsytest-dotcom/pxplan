@@ -1033,3 +1033,58 @@ Pending follow-up:
 - Continue moving repair and maintenance tools farther away from the everyday table workflow.
 - Consider a future backend media-to-option-value binding model only if product requirements need "bind this image to every Blue variant" as a native concept.
 
+## Completed Slice 30: Variant Refresh Intent and Draft Reconciliation
+
+Status: Complete on 2026-05-24
+
+Summary:
+- Implemented Phase 5B from `VARIANT_TABLE_AND_JOB_UX_PLAN.md`: variant refreshes now have explicit soft vs hard intent.
+- Preserved unsaved row edits during normal soft refreshes, row saves, pagination reloads, and job refreshes that do not invalidate row identity.
+- Added discard confirmation before hard-refresh actions that can reload or invalidate variant row state.
+
+Frontend:
+- Updated [`admin-product-edit-form.tsx`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/admin-product-edit-form.tsx) so `reconcileSnapshot(productId, { intent })` owns refresh intent:
+  - `soft` refresh keeps row drafts and row save feedback intact,
+  - `hard` refresh clears variant drafts, row save states, and row selections before loading authoritative server state.
+- Added synchronous draft mirroring with `variantEditsRef` so immediate save actions read the newest row edits even when React batches input updates.
+- Added i18n-backed hard-refresh discard confirmation copy in [`admin-copy.ts`](file:///D:/Github/muhsinmuhsy/PX/PX-F/lib/catalog/admin-copy.ts).
+- Updated [`use-product-variant-actions.ts`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/product-editor/use-product-variant-actions.ts) so destructive/structural actions ask for hard-refresh confirmation before proceeding:
+  - option delete,
+  - option value delete,
+  - revert generated additions,
+  - archive/restore variant,
+  - rebuild/reset variants.
+- Kept normal row saves on soft refresh so saving one variant does not wipe unsaved edits in another row.
+- Simplified [`use-variant-pagination.ts`](file:///D:/Github/muhsinmuhsy/PX/PX-F/lib/catalog/use-variant-pagination.ts) into a server-row loader only. Draft preservation now lives in the editor/table layer instead of hidden pagination merging.
+
+Tests:
+- Added action-hook coverage proving hard-refresh actions do not call destructive APIs when the user declines to discard unsaved variant edits.
+- Kept and revalidated editor coverage proving unsaved edits in one row survive saving another row.
+- Revalidated the exact media binder and variant table tests after the refresh ownership change.
+
+Important reasoning:
+- Soft refresh is the normal, non-surprising path for background updates and row saves.
+- Hard refresh is reserved for operations that can change row identity or replace authoritative structure, and it now asks before discarding local work.
+- Moving draft preservation out of pagination removes hidden state merging and makes ownership easier to reason about.
+
+API, database, and schema changes:
+- None.
+
+Verification completed:
+- Frontend focused variant/editor tests: `46 passed`.
+- Frontend full test suite: `323 passed` out of `323`.
+- Frontend ESLint: passed with zero warnings.
+- Frontend TypeScript: passed (`tsc --noEmit`).
+- Frontend i18n check: passed for 10 locales.
+- Frontend production build: compiled successfully.
+- Backend targeted media tests: `2 passed`.
+- Backend Ruff: passed (`All checks passed!`).
+- Backend Mypy: passed (`Success: no issues found in 86 source files`).
+
+Environment-limited verification:
+- Backend full pytest was attempted with `PX-B/w.venv`, but timed out after 5 minutes in this environment before producing a final summary. Targeted backend coverage relevant to the changed variant/media workflows passed.
+
+Pending follow-up:
+- Continue moving repair and maintenance tools farther away from the everyday table workflow.
+- Consider native media-to-option-value binding only if product requirements need one image to apply to every variant sharing a color/value.
+

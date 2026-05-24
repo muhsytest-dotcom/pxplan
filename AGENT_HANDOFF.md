@@ -6,7 +6,7 @@ Read this document first, then `00_START_HERE.md`, `WHAT-DONE.md`, and the archi
 
 ---
 
-## 1. Latest Implementation Status (Slice 29 Exact Variant Media Binder Complete)
+## 1. Latest Implementation Status (Slice 30 Variant Refresh Intent and Draft Reconciliation Complete)
 
 The core product variant synchronization engine, background processing pipeline, multi-tenant boundaries, logical archiving/retention strategies, frontend/backend option deletion optimistic concurrency guard contracts, and the first three variant table UX modernization slices are **implemented and validated**.
 
@@ -48,6 +48,13 @@ The core product variant synchronization engine, background processing pipeline,
   - Wired row media binding through the existing `PATCH /catalog/admin/products/{product_id}/media/{media_id}` API with `{ variant_id, needs_variant_rebinding: false }`.
   - Added row-level binding feedback (`saving`, `saved`, `failed`) separate from SKU/price/stock row draft state.
   - Added frontend component coverage for exact row media binding and backend API coverage rejecting cross-product variant binding.
+- **Variant Refresh Intent and Draft Reconciliation (Slice 30)**:
+  - Added explicit `soft` vs `hard` refresh intent to the product editor's authoritative snapshot reconciliation path.
+  - Preserved dirty variant row drafts during normal soft refreshes, row saves, pagination reloads, and non-destructive job completion refreshes.
+  - Added hard-refresh discard confirmation before structural/destructive actions that can invalidate row identity or replace authoritative structure.
+  - Kept row saves on soft refresh so saving one variant no longer risks wiping unsaved edits in another row.
+  - Simplified `useVariantPagination` into a server-row loader only; draft preservation now belongs to the editor/table state layer.
+  - Added action-hook coverage proving hard-refresh actions stop before destructive APIs when the discard confirmation is declined.
 
 ### Quality Gate Compliance:
 | Gate | Verification Command | Status |
@@ -55,13 +62,13 @@ The core product variant synchronization engine, background processing pipeline,
 | **Backend Tests** | `w.venv` targeted media tests | **`2 passed` / `2`** for exact media binding coverage |
 | **Backend Linter** | `ruff check .` | **`100% clean`** (0 warnings) |
 | **Backend Types** | `mypy app` | **`100% clean`** (Success: no issues in 86 source files) |
-| **Frontend Tests** | `vitest run` | **`322 passed` / `322`** (100% green) |
+| **Frontend Tests** | `vitest run` | **`323 passed` / `323`** (100% green) |
 | **Frontend Linter** | `npm run lint` | **`100% clean`** (0 warnings) |
 | **Frontend Types** | `npm run typecheck` | **`100% clean`** (0 warnings) |
 | **Frontend i18n** | `npm run i18n:check` | **Passed for 10 locales** |
 | **Frontend Build** | `npm run build` | **`Compiled successfully`** (Production ready) |
 
-> Backend full pytest was attempted with `PX-B/w.venv` for Slice 29, but timed out after 5 minutes in this environment before producing a final summary. Targeted backend media tests for the changed contract passed, and backend Ruff/Mypy gates are clean.
+> Backend full pytest was attempted with `PX-B/w.venv` for Slice 30, but timed out after 5 minutes in this environment before producing a final summary. Targeted backend media tests for the changed variant/media workflows passed, and backend Ruff/Mypy gates are clean.
 
 ---
 
@@ -99,7 +106,6 @@ To ensure future features (such as **Orders**, **Carts**, **Inventory**, or **Sp
 
 The current system is ready for the next UX hardening slice. The remaining roadmap items are:
 1. **Variant Editor UX Follow-up**:
-   * Add explicit soft vs hard refresh reconciliation for dirty/failed row state.
    * Move advanced repair and maintenance tools farther away from the everyday table workflow.
    * Consider native media-to-option-value binding only if product requirements need one image to apply to every variant sharing a color/value.
 2. **Richer E2E/API Test Coverage**:

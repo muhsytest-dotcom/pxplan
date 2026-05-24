@@ -17,6 +17,7 @@ Decision status:
 - Adopted: orphaned rows should allow most safe edits unless a direct backend integrity risk exists.
 - Adopted: define explicit ownership for row drafts, table state, and refresh reconciliation before implementing row save feedback.
 - Implemented in Slice 29: exact-variant media binder from the variant table using the existing product media `variant_id` binding contract.
+- Implemented in Slice 30: explicit soft/hard variant refresh intent, synchronous draft ownership, hard-refresh discard confirmation, and server-row pagination without hidden dirty-state merging.
 
 ## Purpose
 
@@ -554,9 +555,12 @@ Implementation guidance:
 - Do not let every parent effect directly mutate row draft state.
 - Do not let server refreshes blindly overwrite active dirty rows.
 - Keep failed save state visible until the user edits again, retries, or performs a hard refresh.
-- Preserve current `useVariantPagination` behavior that merges server rows with local dirty edits, but formalize the merge rules for row save states too.
+- Keep `useVariantPagination` as a server-row loader only. Draft preservation belongs to the editor/table draft layer so refresh behavior stays explicit and testable.
 
 ### Phase 5B: Soft Refresh vs Hard Refresh
+
+Status:
+- Implemented in Slice 30.
 
 Goal:
 - Make background updates safe and predictable.
