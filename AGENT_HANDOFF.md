@@ -6,7 +6,7 @@ Read this document first, then `00_START_HERE.md`, `WHAT-DONE.md`, and the archi
 
 ---
 
-## 1. Latest Implementation Status (Slice 32 Structure Guard Payload Fix Complete)
+## 1. Latest Implementation Status (Slice 33 Stable Variant Table Refresh Complete)
 
 The core product variant synchronization engine, background processing pipeline, multi-tenant boundaries, logical archiving/retention strategies, frontend/backend option deletion optimistic concurrency guard contracts, and the first three variant table UX modernization slices are **implemented and validated**.
 
@@ -67,20 +67,27 @@ The core product variant synchronization engine, background processing pipeline,
   - Updated create option, rename option, reorder option, add option value, and edit option value name/color/image actions to send the current structure guard.
   - Added frontend regressions proving option value create/update payloads include the guard.
   - Cleaned the generated initial Alembic migration import/type header so backend Ruff stays green; migration operations were unchanged.
+- **Stable Variant Table Refresh After Row Saves (Slice 33)**:
+  - Fixed the issue where saving a variant row could make the variant table disappear and show the empty/generate card.
+  - Preserved loaded variant rows when lightweight authoritative snapshots return `variants: null`; that value means rows were not included, not that rows do not exist.
+  - Added synchronized variant-row state ownership in [`admin-product-edit-form.tsx`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/admin-product-edit-form.tsx).
+  - Merged updated variant rows returned from single-row saves and selected bulk updates before snapshot reconciliation.
+  - Updated [`product-variants-section.tsx`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/product-editor/product-variants-section.tsx) so empty cards require `totalVariants === 0` and nonzero totals with unloaded rows show a loading table state.
+  - Added frontend regressions for row-save stability after lightweight snapshot refresh and nonzero-total unloaded table state.
 
 ### Quality Gate Compliance:
 | Gate | Verification Command | Status |
 | :--- | :--- | :--- |
-| **Backend Tests** | `w.venv` targeted option value metadata test | **`1 passed` / `1`** for visual option value coverage |
+| **Backend Tests** | Skipped for Slice 33 | **No backend code changed; skipped per user instruction** |
 | **Backend Linter** | `ruff check .` | **`100% clean`** (0 warnings) |
 | **Backend Types** | `mypy app` | **`100% clean`** (Success: no issues in 86 source files) |
-| **Frontend Tests** | `vitest run` | **`326 passed` / `326`** (100% green) |
+| **Frontend Tests** | `vitest run` | **`328 passed` / `328`** (100% green) |
 | **Frontend Linter** | `npm run lint` | **`100% clean`** (0 warnings) |
 | **Frontend Types** | `npm run typecheck` | **`100% clean`** (0 warnings) |
 | **Frontend i18n** | `npm run i18n:check` | **Passed for 10 locales** |
 | **Frontend Build** | `npm run build` | **`Compiled successfully`** (Production ready) |
 
-> Backend full pytest was not re-run for Slice 32 after the previous repeated 5-minute environment timeouts. Targeted backend option-value metadata coverage passed, and backend Ruff/Mypy gates are clean.
+> Backend pytest was skipped for Slice 33 because this was a frontend-only table refresh fix and the user explicitly requested skipping backend tests. Backend Ruff/Mypy gates are clean.
 
 ---
 
