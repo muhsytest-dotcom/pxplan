@@ -1088,3 +1088,58 @@ Pending follow-up:
 - Continue moving repair and maintenance tools farther away from the everyday table workflow.
 - Consider native media-to-option-value binding only if product requirements need one image to apply to every variant sharing a color/value.
 
+## Completed Slice 31: Repair and Maintenance Panel Separation
+
+Status: Complete on 2026-05-24
+
+Summary:
+- Implemented the remaining repair/maintenance separation from `VARIANT_TABLE_AND_JOB_UX_PLAN.md`.
+- The everyday variants table now keeps a calm "rows need attention" message with the safe primary action visible.
+- Advanced repair actions and low-level impact metrics are hidden behind a dedicated maintenance panel instead of competing with price, stock, SKU, image, and visibility editing.
+
+Frontend:
+- Added [`variant-maintenance-panel.tsx`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/product-editor/variant-maintenance-panel.tsx) as the reusable repair/maintenance surface for:
+  - missing row generation,
+  - revert new structural changes,
+  - review structure,
+  - rebuild from scratch,
+  - impact metrics for missing rows, orphaned rows, detached media, and removed variant attributes.
+- Updated [`product-variants-section.tsx`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/product-editor/product-variants-section.tsx):
+  - replaced the technical "variant structure changed" table warning with a calmer "Variant rows need attention" state,
+  - kept "Generate missing variants" as the primary safe action,
+  - moved revert/rebuild/impact details behind "Open maintenance",
+  - removed the old inline metric card helper after it became dead code,
+  - removed repair impact metrics from the empty variants state so the empty flow stays focused on generating rows or reviewing structure.
+- Added i18n-backed maintenance copy in [`admin-copy.ts`](file:///D:/Github/muhsinmuhsy/PX/PX-F/lib/catalog/admin-copy.ts). Locale dictionaries continue to inherit new keys through the existing fallback pattern.
+
+Tests:
+- Updated [`product-variants-section.test.tsx`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/product-editor/__tests__/product-variants-section.test.tsx) to verify repair actions stay hidden until the maintenance panel is opened.
+- Updated [`admin-product-edit-form.test.tsx`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/__tests__/admin-product-edit-form.test.tsx) for the new attention copy and maintenance-gated revert flow.
+- Revalidated the existing Studio repair-action tests so rebuild remains gated inside the structure Studio as well.
+
+Important reasoning:
+- Store managers should see the next safe action first, not destructive repair tools.
+- The maintenance panel creates a single future home for detached-media recovery and diagnostics without making the main table feel like an operations console.
+- Backend contracts did not need to change; this is a frontend UX architecture slice.
+
+API, database, and schema changes:
+- None.
+
+Verification completed:
+- Frontend focused variant/editor tests: `43 passed`.
+- Frontend full test suite: `324 passed` out of `324`.
+- Frontend ESLint: passed with zero warnings.
+- Frontend TypeScript: passed (`tsc --noEmit`).
+- Frontend i18n check: passed for 10 locales.
+- Frontend production build: compiled successfully.
+- Backend targeted media tests: `2 passed`.
+- Backend Ruff: passed (`All checks passed!`).
+- Backend Mypy: passed (`Success: no issues found in 86 source files`).
+
+Environment-limited verification:
+- Backend full pytest was attempted with `PX-B/w.venv`, but timed out after 5 minutes in this environment before producing a final summary. Backend code was not changed in this slice, and targeted backend coverage plus Ruff/Mypy passed.
+
+Pending follow-up:
+- Consider native media-to-option-value binding only if product requirements need one image to apply to every variant sharing a color/value.
+- Add broader browser-level E2E coverage for the full admin setup -> generate -> media bind -> publish -> storefront verification path.
+

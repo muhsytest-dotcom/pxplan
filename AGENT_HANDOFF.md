@@ -6,7 +6,7 @@ Read this document first, then `00_START_HERE.md`, `WHAT-DONE.md`, and the archi
 
 ---
 
-## 1. Latest Implementation Status (Slice 30 Variant Refresh Intent and Draft Reconciliation Complete)
+## 1. Latest Implementation Status (Slice 31 Repair and Maintenance Panel Separation Complete)
 
 The core product variant synchronization engine, background processing pipeline, multi-tenant boundaries, logical archiving/retention strategies, frontend/backend option deletion optimistic concurrency guard contracts, and the first three variant table UX modernization slices are **implemented and validated**.
 
@@ -55,6 +55,12 @@ The core product variant synchronization engine, background processing pipeline,
   - Kept row saves on soft refresh so saving one variant no longer risks wiping unsaved edits in another row.
   - Simplified `useVariantPagination` into a server-row loader only; draft preservation now belongs to the editor/table state layer.
   - Added action-hook coverage proving hard-refresh actions stop before destructive APIs when the discard confirmation is declined.
+- **Repair and Maintenance Panel Separation (Slice 31)**:
+  - Added [`variant-maintenance-panel.tsx`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/product-editor/variant-maintenance-panel.tsx) as the dedicated repair/maintenance surface.
+  - Replaced the everyday table's technical structure warning with a calm "Variant rows need attention" state.
+  - Kept "Generate missing variants" visible as the primary safe action while moving revert, rebuild, detached-media counts, orphan counts, and removed-attribute metrics behind "Open maintenance".
+  - Removed the old inline table metric helper and removed repair metrics from the empty variants state.
+  - Added i18n-backed maintenance copy and frontend tests for maintenance-gated repair actions.
 
 ### Quality Gate Compliance:
 | Gate | Verification Command | Status |
@@ -62,13 +68,13 @@ The core product variant synchronization engine, background processing pipeline,
 | **Backend Tests** | `w.venv` targeted media tests | **`2 passed` / `2`** for exact media binding coverage |
 | **Backend Linter** | `ruff check .` | **`100% clean`** (0 warnings) |
 | **Backend Types** | `mypy app` | **`100% clean`** (Success: no issues in 86 source files) |
-| **Frontend Tests** | `vitest run` | **`323 passed` / `323`** (100% green) |
+| **Frontend Tests** | `vitest run` | **`324 passed` / `324`** (100% green) |
 | **Frontend Linter** | `npm run lint` | **`100% clean`** (0 warnings) |
 | **Frontend Types** | `npm run typecheck` | **`100% clean`** (0 warnings) |
 | **Frontend i18n** | `npm run i18n:check` | **Passed for 10 locales** |
 | **Frontend Build** | `npm run build` | **`Compiled successfully`** (Production ready) |
 
-> Backend full pytest was attempted with `PX-B/w.venv` for Slice 30, but timed out after 5 minutes in this environment before producing a final summary. Targeted backend media tests for the changed variant/media workflows passed, and backend Ruff/Mypy gates are clean.
+> Backend full pytest was attempted with `PX-B/w.venv` for Slice 31, but timed out after 5 minutes in this environment before producing a final summary. Backend code was not changed in this slice; targeted backend media tests, backend Ruff, and backend Mypy passed.
 
 ---
 
@@ -106,7 +112,6 @@ To ensure future features (such as **Orders**, **Carts**, **Inventory**, or **Sp
 
 The current system is ready for the next UX hardening slice. The remaining roadmap items are:
 1. **Variant Editor UX Follow-up**:
-   * Move advanced repair and maintenance tools farther away from the everyday table workflow.
    * Consider native media-to-option-value binding only if product requirements need one image to apply to every variant sharing a color/value.
 2. **Richer E2E/API Test Coverage**:
    * Add Playwright or custom integration test suites confirming template Apply + Quota Failures end-to-end.

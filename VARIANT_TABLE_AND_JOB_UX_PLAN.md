@@ -18,6 +18,7 @@ Decision status:
 - Adopted: define explicit ownership for row drafts, table state, and refresh reconciliation before implementing row save feedback.
 - Implemented in Slice 29: exact-variant media binder from the variant table using the existing product media `variant_id` binding contract.
 - Implemented in Slice 30: explicit soft/hard variant refresh intent, synchronous draft ownership, hard-refresh discard confirmation, and server-row pagination without hidden dirty-state merging.
+- Implemented in Slice 31: repair and maintenance actions moved behind a dedicated maintenance panel so everyday variant editing keeps a calm next-action flow.
 
 ## Purpose
 
@@ -89,6 +90,7 @@ Recommended visible order:
 5. **Repair & Maintenance**
    - Hidden or visually secondary.
    - Contains rebuild, orphan repair, detached media, diagnostics, and advanced recovery.
+   - Implemented in Slice 31 as a dedicated maintenance panel opened from a secondary action when rows need attention.
 
 ### What The User Should See First
 
