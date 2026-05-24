@@ -1,6 +1,6 @@
 # Variant Table and Job UX Stabilization Plan
 
-Status: Proposed for review  
+Status: Active implementation plan  
 Created: 2026-05-24  
 Scope: PX-F product editor variant management UX and state flow
 
@@ -16,6 +16,7 @@ Decision status:
 - Adopted: use "product versions" only as onboarding/helper language.
 - Adopted: orphaned rows should allow most safe edits unless a direct backend integrity risk exists.
 - Adopted: define explicit ownership for row drafts, table state, and refresh reconciliation before implementing row save feedback.
+- Implemented in Slice 29: exact-variant media binder from the variant table using the existing product media `variant_id` binding contract.
 
 ## Purpose
 
@@ -477,7 +478,7 @@ Recommended behavior:
   - set price override,
   - set stock,
   - add stock delta,
-- set visibility,
+  - set visibility,
   - clear selection.
 - Replace the always-visible filter/page bulk editor with selection-based bulk editing.
 - Filter/page-wide bulk actions are risky because users can forget a filter is active or misunderstand the scope.
@@ -581,18 +582,23 @@ Implementation guidance:
 
 ### Phase 6: 1-Click Media Binder
 
+Status:
+- Implemented in Slice 29 for exact `variant_id` media binding.
+
 Goal:
 - Make variant media assignment fast from the variant table itself.
 
 Existing foundation:
 - Product media already supports `variant_id` binding.
 - The media section already supports rebinding and unassigned media workflows.
+- Backend support is exact-variant only today: media attaches to one concrete `variant_id`, or remains product-level/unassigned with `variant_id: null`.
 
 Recommended behavior:
 - Add a thumbnail cell to each variant row.
 - Show the currently bound variant media if available.
 - Clicking the thumbnail opens a compact media picker grid.
-- Selecting a media item binds it to the variant with one action.
+- Selecting a media item binds it to that exact variant row with one action by patching the media item's `variant_id`.
+- Do not model "bind this image to all Blue variants" in the first implementation. That would require either repeated exact-row bindings in the frontend or a later backend media-to-option-value binding model.
 - Show a saved indicator after binding.
 
 Implementation note:
@@ -718,7 +724,7 @@ Manual UX checks:
 
 ## Open Review Questions
 
-1. Should media binding in the table bind one media item per exact variant, or support binding one image to all variants sharing the same color/value?
+No open review questions currently block the next frontend implementation.
 
 ## Resolved Review Questions
 
@@ -731,3 +737,4 @@ Manual UX checks:
 7. "Variants" is the canonical term; "product versions" is helper/onboarding language only.
 8. Orphaned rows should allow safe edits unless there is a direct backend integrity risk.
 9. Row draft ownership, table state ownership, and refresh reconciliation must be explicit before row save feedback is implemented.
+10. Table media binding should use exact `variant_id` binding. Binding one image to all variants sharing a color/value is a future backend/product-model decision, not the next practical implementation.

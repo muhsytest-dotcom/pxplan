@@ -974,3 +974,62 @@ Pending follow-up:
 - Continue the repair/maintenance panel separation so advanced repair tools are visually secondary.
 - Continue the 1-click media binder after table save and selection flows are stable.
 
+## Completed Slice 29: Exact Variant Media Binder
+
+Status: Complete on 2026-05-24
+
+Summary:
+- Implemented Phase 6 from `VARIANT_TABLE_AND_JOB_UX_PLAN.md`: a table-level media binder for assigning product images directly from each variant row.
+- Kept the implementation aligned with the current backend media contract: media binds to one exact `variant_id`; color/value-wide binding remains a future backend/product-model decision.
+- Added frontend and backend regression coverage around exact variant media binding.
+
+Frontend:
+- Added [`variant-media-cell.tsx`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/product-editor/variant-media-cell.tsx) as the reusable row-level media picker:
+  - shows the currently bound image for the exact variant,
+  - opens a compact product-media grid from the variant table,
+  - labels whether media is already bound to this variant, bound elsewhere, or product-level,
+  - shows row-level saving/saved/failed feedback for image binding.
+- Updated [`variant-table-row.tsx`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/product-editor/variant-table-row.tsx) and [`product-variants-section.tsx`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/product-editor/product-variants-section.tsx) to add the new Image column between Variant identity and SKU.
+- Wired exact media binding through [`admin-product-edit-form.tsx`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/admin-product-edit-form.tsx):
+  - calls the existing `updateProductMedia(productId, mediaId, { variant_id, needs_variant_rebinding: false })` API path,
+  - refreshes product media after binding,
+  - keeps feedback scoped to the affected variant row.
+- Added i18n-backed copy for the media column, picker, empty state, exact-binding hint, and row-level media save feedback in [`admin-copy.ts`](file:///D:/Github/muhsinmuhsy/PX/PX-F/lib/catalog/admin-copy.ts). Locale copies inherit these keys through the existing spread/fallback pattern.
+
+Backend:
+- Added a focused backend regression in [`test_catalog_media.py`](file:///D:/Github/muhsinmuhsy/PX/PX-B/tests/test_catalog_media.py) proving product media cannot bind to a variant from another product.
+- No API, database, or schema changes were needed; this slice uses the existing `PATCH /catalog/admin/products/{product_id}/media/{media_id}` contract.
+
+Tests:
+- Updated [`product-variants-section.test.tsx`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/product-editor/__tests__/product-variants-section.test.tsx) for:
+  - selecting a media item from the row picker and binding it to the exact variant row,
+  - showing the current variant thumbnail and saved feedback.
+- Added backend API-level coverage for cross-product media binding rejection.
+
+Important reasoning:
+- The table workflow now matches the user's everyday task: assign the image while editing the variant's selling details.
+- Binding remains exact-row only because the backend currently supports `variant_id`, not a media-to-option-value model.
+- The row media picker is reusable and separate from row pricing/stock save state, avoiding mixed ownership between variant field drafts and media binding state.
+
+API, database, and schema changes:
+- None.
+
+Verification completed:
+- Frontend focused variant tests: `19 passed`.
+- Frontend full test suite: `322 passed` out of `322`.
+- Frontend ESLint: passed with zero warnings.
+- Frontend TypeScript: passed (`tsc --noEmit`).
+- Frontend i18n check: passed for 10 locales.
+- Frontend production build: compiled successfully.
+- Backend targeted media tests: `2 passed`.
+- Backend Ruff: passed (`All checks passed!`).
+- Backend Mypy: passed (`Success: no issues found in 86 source files`).
+
+Environment-limited verification:
+- Backend full pytest was attempted with `PX-B/w.venv`, but timed out after 5 minutes in this environment before producing a final summary. Targeted media coverage for this slice passed.
+
+Pending follow-up:
+- Continue explicit soft vs hard refresh reconciliation for dirty/failed row state.
+- Continue moving repair and maintenance tools farther away from the everyday table workflow.
+- Consider a future backend media-to-option-value binding model only if product requirements need "bind this image to every Blue variant" as a native concept.
+

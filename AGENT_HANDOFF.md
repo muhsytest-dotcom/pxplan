@@ -6,9 +6,9 @@ Read this document first, then `00_START_HERE.md`, `WHAT-DONE.md`, and the archi
 
 ---
 
-## 1. Latest Implementation Status (Slice 28 Variant Table Trust and Inventory Workspace Redesign Complete)
+## 1. Latest Implementation Status (Slice 29 Exact Variant Media Binder Complete)
 
-The core product variant synchronization engine, background processing pipeline, multi-tenant boundaries, logical archiving/retention strategies, frontend/backend option deletion optimistic concurrency guard contracts, and the first two variant table UX modernization slices are **implemented and validated**.
+The core product variant synchronization engine, background processing pipeline, multi-tenant boundaries, logical archiving/retention strategies, frontend/backend option deletion optimistic concurrency guard contracts, and the first three variant table UX modernization slices are **implemented and validated**.
 
 ### Completed Slices (Slices 1 to 25 & Guard Alignment):
 - **Core Domain & Identity**: Canonical option combination keys (locale-independent sorted hashes) and active-only database-level uniqueness constraints.
@@ -42,19 +42,26 @@ The core product variant synchronization engine, background processing pipeline,
   - Replaced always-visible filtered/page bulk editing with selection-only bulk editing and clear selected-count copy.
   - Added i18n-backed labels for table identity, selection, save states, loading, archived restore, and bulk selection copy.
   - Removed the previous frontend ESLint warning by deleting the unused `text` parameter from the auth refresh helper in [`api.ts`](file:///D:/Github/muhsinmuhsy/PX/PX-F/lib/catalog/api.ts).
+- **Exact Variant Media Binder (Slice 29)**:
+  - Added [`variant-media-cell.tsx`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/product-editor/variant-media-cell.tsx) as the reusable table-row media picker for exact `variant_id` image binding.
+  - Added an Image column to the variant table so shop managers can assign or change a variant image without leaving the inventory table.
+  - Wired row media binding through the existing `PATCH /catalog/admin/products/{product_id}/media/{media_id}` API with `{ variant_id, needs_variant_rebinding: false }`.
+  - Added row-level binding feedback (`saving`, `saved`, `failed`) separate from SKU/price/stock row draft state.
+  - Added frontend component coverage for exact row media binding and backend API coverage rejecting cross-product variant binding.
 
 ### Quality Gate Compliance:
 | Gate | Verification Command | Status |
 | :--- | :--- | :--- |
-| **Backend Tests** | `w.venv` targeted worker tests | **`8 passed` / `8`** for the worker registry regression path |
-| **Backend Linter** | targeted `ruff check app/modules/catalog/worker.py tests/test_catalog_worker.py` | **`100% clean`** (0 warnings) |
-| **Backend Types** | targeted `mypy app/modules/catalog/worker.py` | **`100% clean`** (Success: no issues in 1 source file) |
-| **Frontend Tests** | `vitest run` | **`320 passed` / `320`** (100% green) |
+| **Backend Tests** | `w.venv` targeted media tests | **`2 passed` / `2`** for exact media binding coverage |
+| **Backend Linter** | `ruff check .` | **`100% clean`** (0 warnings) |
+| **Backend Types** | `mypy app` | **`100% clean`** (Success: no issues in 86 source files) |
+| **Frontend Tests** | `vitest run` | **`322 passed` / `322`** (100% green) |
 | **Frontend Linter** | `npm run lint` | **`100% clean`** (0 warnings) |
 | **Frontend Types** | `npm run typecheck` | **`100% clean`** (0 warnings) |
+| **Frontend i18n** | `npm run i18n:check` | **Passed for 10 locales** |
 | **Frontend Build** | `npm run build` | **`Compiled successfully`** (Production ready) |
 
-> Backend full pytest requires Docker/Testcontainers. For Slice 28, backend code was not changed; focused backend worker tests/lint/types were run through `PX-B/w.venv` to keep the recent worker registry fix covered without rerunning the full Docker-backed suite.
+> Backend full pytest was attempted with `PX-B/w.venv` for Slice 29, but timed out after 5 minutes in this environment before producing a final summary. Targeted backend media tests for the changed contract passed, and backend Ruff/Mypy gates are clean.
 
 ---
 
@@ -94,7 +101,7 @@ The current system is ready for the next UX hardening slice. The remaining roadm
 1. **Variant Editor UX Follow-up**:
    * Add explicit soft vs hard refresh reconciliation for dirty/failed row state.
    * Move advanced repair and maintenance tools farther away from the everyday table workflow.
-   * Add the 1-click variant media binder once row save and selection flows remain stable.
+   * Consider native media-to-option-value binding only if product requirements need one image to apply to every variant sharing a color/value.
 2. **Richer E2E/API Test Coverage**:
    * Add Playwright or custom integration test suites confirming template Apply + Quota Failures end-to-end.
    * Add automated browser-level E2E tests for media rebinding after product rebuilds.
