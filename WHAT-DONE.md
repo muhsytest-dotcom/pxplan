@@ -864,7 +864,7 @@ Frontend:
 Backend:
 - No API, database, or schema behavior changed.
 - Cleaned pre-existing backend worker lint/type issues so backend Ruff and Mypy gates pass:
-  - removed unused imports and stale debug/comment noise in [`worker.py`](file:///D:/Github/muhsinmuhsy/PX/PX-B/app/modules/catalog/worker.py),
+  - replaced implicit model side-effect imports with an explicit `_model_registry` import in [`worker.py`](file:///D:/Github/muhsinmuhsy/PX/PX-B/app/modules/catalog/worker.py), preserving SQLModel foreign-key table registration for worker commits,
   - wrapped `CatalogVariantJob.created_at` with `col(...)` for SQLModel/Mypy compatibility,
   - removed unused imports/locals from [`test_catalog_worker.py`](file:///D:/Github/muhsinmuhsy/PX/PX-B/tests/test_catalog_worker.py).
 
@@ -877,6 +877,7 @@ Tests:
 - Updated [`product-variants-section.test.tsx`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/product-editor/__tests__/product-variants-section.test.tsx) for terminal job dismissal.
 - Updated [`admin-product-edit-form.test.tsx`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/__tests__/admin-product-edit-form.test.tsx) so missing variant rows are treated as attention state while existing rows remain editable.
 - Ran targeted backend worker tests after cleanup.
+- Added a worker regression assertion that `user` and `catalog_jobs` tables are registered in SQLModel metadata after importing the worker module.
 
 Important reasoning:
 - The controller hook prevents scattered effects from duplicating SSE subscriptions, restarting polling on every job payload update, or resurrecting dismissed terminal cards.
@@ -895,7 +896,7 @@ Verification completed:
 - Frontend production build: compiled successfully.
 - Backend Ruff: passed (`All checks passed!`).
 - Backend Mypy: passed (`Success: no issues found in 86 source files`).
-- Backend targeted worker tests: `7 passed`.
+- Backend targeted worker tests: `8 passed`.
 
 Environment-limited verification:
 - Backend full pytest was attempted through `w.venv`, but could not run because Docker/Testcontainers cannot connect to `//./pipe/docker_engine` in this environment. The failure occurs during test fixture setup before application tests execute and is unrelated to this slice's code changes.

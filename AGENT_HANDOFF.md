@@ -33,7 +33,7 @@ The core product variant synchronization engine, background processing pipeline,
   - Reduced fallback polling to 1.5 seconds for active jobs and added a 10 second idle heartbeat for active-job discovery.
   - Completed job cards auto-dismiss after 5 seconds; failed job cards persist until retry or manual dismissal.
   - Missing/orphaned variant row states now warn without freezing existing non-archived row edits.
-  - Cleaned backend worker lint/type drift in [`worker.py`](file:///D:/Github/muhsinmuhsy/PX/PX-B/app/modules/catalog/worker.py) and [`test_catalog_worker.py`](file:///D:/Github/muhsinmuhsy/PX/PX-B/tests/test_catalog_worker.py).
+  - Cleaned backend worker lint/type drift in [`worker.py`](file:///D:/Github/muhsinmuhsy/PX/PX-B/app/modules/catalog/worker.py) and [`test_catalog_worker.py`](file:///D:/Github/muhsinmuhsy/PX/PX-B/tests/test_catalog_worker.py), while preserving explicit SQLModel model-registry import side effects required for worker foreign-key resolution.
 
 ### Quality Gate Compliance:
 | Gate | Verification Command | Status |
