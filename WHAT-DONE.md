@@ -1242,3 +1242,58 @@ Verification completed:
 Environment/user-directed verification note:
 - Backend pytest was skipped because this slice changed no backend code, per user instruction.
 
+## Completed Slice 34: Merchant-First Variant UX Hardening (VARIANT_STRUCTURE_REVIEW_UX_PLAN.md)
+
+Status: Complete on 2026-06-07
+
+Summary:
+- Implemented the merchant-facing UX hardening from `VARIANT_STRUCTURE_REVIEW_UX_PLAN.md`, extending the prior table/job UX slice.
+- Eliminated technical jargon from merchant-facing copy, replacing internal terms with calm, non-technical language.
+- Centralized all per-variant editability gating into reusable selectors so no component independently re-derives row-state rules.
+- Added per-row structural classification so every variant row is tagged as Active, Older, or Archived instead of only Archived being surfaced.
+- Added merchant-first status cards and updated the existing table workflow to use calm, confidence-building language.
+- Kept backend contracts, database schema, and API paths unchanged.
+
+Frontend:
+- Added 8 new merchant copy keys to `CatalogAdminCopy["productEdit"]` in `PX-F/lib/catalog/admin-copy.ts`:
+  - `variantViewActive`, `variantViewOlder`, `variantViewArchived`
+  - `variantsReadyTitle`, `variantsReadyHint`
+  - `savedVariantsTitle`, `savedVariantsHint`
+  - `allSetTitle`, `allSetHint`
+  - `finishSetupTitle`, `finishSetupHint`
+- Added `VariantStructuralState` union and `classifyVariantRow()` to `PX-F/lib/catalog/variant-domain.ts`. The helper classifies each row as `current_active`, `stale_active`, `archived`, or `incomplete_draft` based on `lifecycle_status`, current option setup, and combination completeness. Reuses canonical key logic and validates duplicate/missing coverage.
+- Added `PX-F/lib/catalog/variant-capabilities.ts` with centralized selectors:
+  - `canEditRowFields`, `canBulkEditRows`, `canArchiveRow`, `canRestoreRow`, `canAssignMediaToRow`, `canDeleteRow`, `canBindAttributes`
+  - `getPrimaryActionForState` maps state combinations to CTAs from the Recommended Next Action Map.
+  - `getEditabilityReason` provides friendly helper text for disabled fields.
+- Updated `VariantIdentityCell` to accept `currentOptions` and `isOptionsReady`, render `classifyVariantRow()` badges per row:
+  - Active → green success badge
+  - Older → soft neutral subtle badge (no cautionary amber)
+  - Archived → muted warning badge with helper architecture unchanged
+- Updated `VariantTableRow` to consume the centralized selectors instead of ad hoc condition checks. Disabled/blocked states now derive from `canEditRowFields`, `canBulkEditRows`, `canDeleteRow`, `canAssignMediaToRow`, and `canRestoreRow` across checkbox, inputs, media picker, archive, and restore controls.
+- Updated `product-variants-section.tsx` to pass `options` as `currentOptions` and `combinationState.isReady` as `isOptionsReady` into each `VariantTableRow` so badge classification and edit gating are aligned.
+- Preserved i18n: all 10 existing locale dictionaries inherit new keys through the existing spread/fallback pattern, and `npm run i18n:check` passes.
+
+Tests:
+- Added `PX-F/lib/catalog/__tests__/variant-row-classification.test.ts` with 8 cases:
+  - archived lifecycle returns `archived`
+  - not-ready or empty options returns `stale_active`
+  - selections matching all current options returns `current_active`
+  - stale value IDs, duplicates, and partial option coverage all return `stale_active`
+  - multi-option full-match returns `current_active`
+  - multi-option partial-match returns `stale_active`
+- Existing 328 tests continue to pass with no regressions.
+
+API, database, and schema changes:
+- None.
+
+Verification completed:
+- Frontend ESLint: 100% clean.
+- Frontend TypeScript (`tsc --noEmit`): 100% clean.
+- Frontend i18n check: passed for 10 locales.
+- Frontend full test suite: `336 passed` (8 new variant-row-classification tests added).
+- Frontend production build: passed.
+- Backend Ruff: passed (`All checks passed!`).
+- Backend Mypy: passed (`Success: no issues found in 86 source files`).
+- Backend full test suite: `258 passed`.
+
