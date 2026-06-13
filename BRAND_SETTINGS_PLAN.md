@@ -27,7 +27,26 @@ Variant, product, and store domain work is complete through Slice 33. The databa
 - Store branding must render on the customer-facing storefront pages.
 - Admin panel branding must remain fixed as the platform brand (not tenant-customizable).
 
-### Out of Scope (MVP)
+### Design Decision: Separate Media Tables
+
+Brand media and product media are intentionally separated into distinct database tables.
+
+```
+store_branding_media   ← new, dedicated to store-level branding assets
+product_media          ← existing, for product and variant images only
+```
+
+**Rationale:**
+
+Brand assets (logo, favicon, banners, hero images, marketing assets, email branding, social sharing images, theme assets) are store-level concerns, not product-level concerns. Mixing them into `product_media` works technically but creates conceptual debt: a logo row would sit in the product media table with `product_id = null` and `variant_id = null`, forcing future developers to interpret "null product_id = maybe a logo" as a special-case rule. As the platform grows beyond logo and favicon (store banners, hero images, marketing assets), the separation becomes increasingly important.
+
+A dedicated table provides:
+- Clear ownership and query intent — every query is explicit about what it touches.
+- No accidental mixing — brand assets can never appear in product media listings, and product images can never be selected as store logos.
+- Simpler permissions and audit trails at the DB layer.
+- Natural expansion path for future brand asset types without polluting product media.
+
+**Out of Scope (MVP)**
 
 The following branding capabilities are intentionally excluded from this slice and may be added in future iterations:
 
@@ -43,6 +62,7 @@ The following branding capabilities are intentionally excluded from this slice a
 
 - Admin and storefront branding are independent. Changing store branding must not alter admin appearance.
 - Brand assets are store-scoped and respect tenant isolation.
+- Brand media is stored in a dedicated `store_branding_media` table, separate from `product_media`. No brand asset lives inside the product media namespace.
 - Uploaded assets go through the existing media/service layer; do not introduce a new file-serving path.
 - Brand settings should not break existing storefront rendering when assets are missing.
 
@@ -63,27 +83,51 @@ The following branding capabilities are intentionally excluded from this slice a
 
 ### Database
 
-Add a lightweight store branding record or extend the existing store model. Preferred approach:
+**New tables: `store_branding_settings` (1:1 with Store) and `store_branding_media` (1:many with Store).**
 
-**New table `store_branding_settings` scoped 1:1 with Store.**
+```
+store_branding_settings
+ ├─ store_id: UUID, PK, FK → stores.id
+ ├─ logo_media_id: UUID | None, FK → store_branding_media.id
+ ├─ favicon_media_id: UUID | None, FK → store_branding_media.id
+ ├─ created_at: datetime
+ └─ updated_at: datetime
 
-Fields:
+store_branding_media
+ ├─ id: UUID, PK
+ ├─ store_id: UUID, FK → stores.id (indexed)
+ ├─ media_type: str (e.g. "logo", "favicon")
+ ├─ storage_provider: str (default "external")
+ ├─ storage_key: str (max 512 chars)
+ ├─ public_url: str (max 2048 chars)
+ ├─ mime_type: str | None
+ ├─ size_bytes: int | None
+ ├─ width: int | None
+ ├─ height: int | None
+ ├─ alt_text: str | None
+ ├─ sort_order: int
+ ├─ is_active: bool (default True)
+ ├─ archived_at: datetime | None
+ ├─ created_at: datetime
+ └─ updated_at: datetime
+```
 
-- `store_id`: UUID, PK, FK to `stores.id`
-- `logo_media_id`: UUID | None, FK to `media.id`
-- `favicon_media_id`: UUID | None, FK to `media.id`
-- `created_at`: datetime
-- `updated_at`: datetime
+Optional future constraint: a unique index on `(store_id, media_type)` where `is_active = True` enforces one active asset per type per store. Omit this constraint if versioning or multiple simultaneous assets per type is planned — the `media_type` field already supports that without schema changes.
 
-Do not store raw image bytes; reference existing media attachments through FK to remain consistent with the current media architecture.
+Do not store raw image bytes. `store_branding_media` mirrors the storage and serving fields of `product_media` but is isolated to store-level assets only — it has no `product_id`, `variant_id`, `is_primary`, `needs_variant_rebinding`, or any product-related fields.
+
+`store_branding_settings` holds the FK references (`logo_media_id`, `favicon_media_id`) to `store_branding_media` rows. This keeps the branding settings shape independent of the media storage shape, allowing multiple brand assets per store in the future (banners, hero images, etc.) without schema changes to the settings table.
 
 **Lifecycle:**
 
-- One branding record per store.
+- One `store_branding_settings` record per store.
 - Created lazily on first `PATCH`.
 - `GET` returns default/null branding values when no record exists yet.
+- `store_branding_media` rows are created per upload and referenced by `logo_media_id` / `favicon_media_id`. When a branding asset is replaced, the previous `store_branding_media` row is soft-archived (`is_active = False`, `archived_at` set). Hard deletion of unreferenced rows is not performed automatically; a separate cleanup job or cascade rule should be defined in implementation if storage cost is a concern.
 
-> Alternatively, if the store model is already the natural home and no brand-specific query pattern demands its own table, store branding fields can be added directly to `Store`. Use a dedicated table if branding settings are expected to grow (colors, fonts, etc.).
+**Why not reuse `product_media`:**
+
+`product_media` is structurally bound to the product/variant domain (`product_id`, `variant_id`, `is_primary`, `needs_variant_rebinding`). Brand assets have no product association and would require null sentinel values in product-specific columns — a design smell that worsens as more brand asset types are added. Separate tables preserve domain clarity and prevent accidental leakage of brand assets into product media queries.
 
 ### API
 
@@ -91,10 +135,11 @@ Backend is the source of truth. The store is resolved from the authenticated adm
 
 Add admin endpoints under the authenticated store scope:
 
-- `GET /catalog/admin/branding`
-- `PATCH /catalog/admin/branding`
+- `GET /catalog/admin/branding` — returns `store_branding_settings` record
+- `PATCH /catalog/admin/branding` — updates `logo_media_id` / `favicon_media_id`
+- `POST /catalog/admin/branding/media/upload-url` — generates upload URL for brand media (analogous to the existing product media upload endpoint)
 
-Request/response should include only identifiers and metadata (not media blobs). Media reads should use the existing media API.
+Request/response should include only identifiers and metadata (not media blobs). Media reads should use the existing media serving path.
 
 **Example `PATCH` request body:**
 
@@ -102,7 +147,7 @@ Request/response should include only identifiers and metadata (not media blobs).
 {"logo_media_id": "uuid-or-null", "favicon_media_id": "uuid-or-null"}
 ```
 
-`null` values are valid and should remove the current asset, causing storefront fallback to defaults.
+`null` values are valid and should remove the current asset reference, causing storefront fallback to defaults.
 
 **Example `GET` response body:**
 
@@ -115,11 +160,22 @@ Request/response should include only identifiers and metadata (not media blobs).
 }
 ```
 
+**Upload flow:**
+
+1. Client calls `POST /catalog/admin/branding/media/upload-url` with `filename`, `mime_type`, `media_type` (e.g. `"logo"` or `"favicon"`). The store is resolved from the authenticated admin context — **no `store_id` in the request body or URL**.
+2. Backend resolves the merchant's store and generates a `storage_key` under `stores/{store_id}/branding/{media_type}/{random_suffix}-{slugified_filename}` and returns a signed upload URL.
+3. Client PUTs bytes to the upload URL.
+4. Backend creates a `store_branding_media` row scoped to the resolved store.
+5. Client calls `PATCH /catalog/admin/branding` with the new `media_id`.
+
+This is structurally parallel to the existing product media upload flow but routes through a dedicated branding path to keep the namespaces separate.
+
 ### Validation & Guardrails
 
 - Enforce store ownership on brand read/write.
 - Branding updates are independent of variant generation, publishing, and background processing workflows and should not be blocked by them.
 - Validate `media_id` references belong to the same store before saving.
+- **Validate media type consistency:** `logo_media_id` must reference a `store_branding_media` row with `media_type = "logo"`, and `favicon_media_id` must reference a row with `media_type = "favicon"`. Reject mismatched assignments. This prevents a favicon image from being linked as the store logo or vice versa.
 - **Validate asset formats:**
   - Logo: PNG, JPG, SVG
   - Favicon: ICO, PNG, SVG (subject to storefront stack support; recommended size: 32x32 or 48x48)
@@ -158,38 +214,49 @@ Request/response should include only identifiers and metadata (not media blobs).
 
 **Backend (PX-B):**
 
-- `app/modules/catalog/models.py` or a new `app/modules/stores/models.py/stores_branding.py`
-- Alembic migration for new table or columns
-- `app/modules/catalog/schemas.py` or `app/modules/stores/schemas.py`
-- `app/modules/catalog/router.py` or new `app/modules/stores/router.py`
-- Store service layer if brand rules need business logic
+- `app/modules/stores/models.py` — new `StoreBrandingSettings` and `StoreBrandingMedia` models
+- `app/modules/stores/schemas.py` — branding request/response schemas
+- `app/modules/stores/router.py` — `GET /catalog/admin/branding`, `PATCH /catalog/admin/branding`, `POST /catalog/admin/branding/media/upload-url`
+- `app/modules/catalog/service.py` — extend or mirror the existing `build_media_upload_url()` for brand media storage key generation (`stores/{store_id}/branding/...`)
+- Alembic migration for `store_branding_settings` and `store_branding_media` tables
+- `app/modules/stores/service.py` — store branding business logic (ownership checks, fallback logic)
 
 **Frontend (PX-F):**
 
 - Admin settings navigation and route
-- `lib/catalog/api.ts` for branding endpoints
-- `lib/catalog/types.ts` for branding types
-- Storefront shell/head components for logo/favicon rendering
+- `lib/stores/api.ts` — branding endpoints and brand media upload
+- `lib/stores/types.ts` — branding and brand media types
+- `components/admin/brand-settings/` — Brand Settings page, upload form, logo/favicon preview components
+- Storefront shell/head components for logo/favicon rendering (reads from store data, resolves via `storeBrandingMedia`)
 - `lib/i18n/ui-copy.ts` and locale dictionaries for new copy
-- Tests in `app/components/.../__tests__/` and `lib/catalog/__tests__/`
+- Tests in `app/components/.../__tests__/` and `lib/stores/__tests__/`
+
+Note: The existing `productMedia` API, types, and components are **not** modified. Brand media uses its own API surface (`/catalog/admin/branding/...`) and own React data structures.
 
 ## Migration Plan
 
-- New table migration with safe default `NULL` values for both media IDs.
-- No data backfill required; merchants set branding explicitly.
-- **Downtime risk:** low. Feature is additive and bypasses variant/publish paths.
+- Two new tables: `store_branding_settings` (1:1 with Store) and `store_branding_media` (1:many with Store, one row per brand asset).
+- Both tables use safe default `NULL` values; no data backfill required — merchants set branding explicitly.
+- New upload endpoint routes brand media to `stores/{store_id}/branding/...` storage keys, physically separated from `stores/{store_id}/products/...` on disk or in bucket.
+- **Downtime risk:** low. Feature is additive and bypasses variant/publish paths. Existing `product_media` table is untouched.
 
 ## Future Extensions
 
-- Primary/accent colors, typography, custom CSS.
+- Store banner, homepage hero image — natural additions to `store_branding_media`.
+- Marketing assets (campaign banners, promotional graphics).
+- Email branding assets (header image, logo).
+- Social sharing images (Open Graph / Twitter Card images).
+- Theme assets (custom CSS, fonts) — structured in brand settings, separate from product data.
 - Multi-brand/white-label for platform-managed store clusters.
 - Preview pane showing live storefront snippet before save.
 - Brand asset versioning or scheduled rollover.
 
+All of these fit naturally into `store_branding_media` without touching `product_media`.
+
 ## Risks & Considerations
 
 - Media FK safety: ensure cleanup respects archive rules.
-- Cache invalidation for storefront headers after brand update. Branding updates should become visible on storefront immediately or within the platform's normal cache refresh window.
+- Cache invalidation: a successful branding update **must** trigger storefront cache invalidation. Branding changes should be visible on the storefront immediately or within the platform's normal cache refresh window. The backend is responsible for issuing the invalidation signal after `PATCH /catalog/admin/branding` commits.
 - i18n coverage for all supported locales via the existing `npm run i18n:check` gate.
 - Keep admin vs storefront separation clear to avoid tenant expectations that the admin panel can be rebranded.
 
