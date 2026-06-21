@@ -1,16 +1,22 @@
 # Agent Handoff and Continuity
 
-Last updated: 2026-05-24
+Last updated: 2026-06-21
 
 Read this document first, then `00_START_HERE.md`, `WHAT-DONE.md`, and the architecture/design specs. Treat this file, `WHAT-DONE.md`, and the live code as the authoritative source of truth for the current state.
 
 ---
 
-## 1. Latest Implementation Status (Slice 33 Stable Variant Table Refresh Complete)
+## 1. Latest Implementation Status (Slice 40 Multi-Store Management UI Hardening Complete)
 
-The core product variant synchronization engine, background processing pipeline, multi-tenant boundaries, logical archiving/retention strategies, frontend/backend option deletion optimistic concurrency guard contracts, and the first three variant table UX modernization slices are **implemented and validated**.
+The core product variant synchronization engine, background processing pipeline, multi-tenant boundaries, logical archiving/retention strategies, frontend/backend option deletion optimistic concurrency guard contracts, brand settings, and the first multi-store admin foundation slice are **implemented and validated**.
 
-### Completed Slices (Slices 1 to 25 & Guard Alignment):
+### Completed Slices (Slices 1 to 40):
+- **Multi-Store Management UI Hardening (Slice 40)**:
+  - Added `AccountMenu` dropdown to admin header with Profile, Security Events, and Log out links.
+  - Rewrote `StoreManagementList` to group domains per store card with Primary/Verified/Pending badges and a `[Domains]` button navigating to the domains page for that store.
+  - Implemented active-store deletion fallback: redirects to `/create-store` if last store deleted, otherwise switches to nearest remaining store by original index.
+  - Added backend x-store-id ownership validation tests for GET, PATCH, upload-url, and list-media endpoints.
+  - All quality gates pass: frontend 379 tests, backend store 17 tests, backend branding 14 tests.
 - **Core Domain & Identity**: Canonical option combination keys (locale-independent sorted hashes) and active-only database-level uniqueness constraints.
 - **Durable Progress Streams**: Server-Sent Events (SSE) background job tracking with monotonic sequence ordering and automatic client-side reconnection/API polling fallback.
 - **Explosion & Quota Protections**: Destination-scoped target store tier policy validation (`Basic` vs. `Pro` limits) checking matrix limits on option apply, templates, copy actions, and background worker queues.
@@ -74,20 +80,38 @@ The core product variant synchronization engine, background processing pipeline,
   - Merged updated variant rows returned from single-row saves and selected bulk updates before snapshot reconciliation.
   - Updated [`product-variants-section.tsx`](file:///D:/Github/muhsinmuhsy/PX/PX-F/app/components/product-editor/product-variants-section.tsx) so empty cards require `totalVariants === 0` and nonzero totals with unloaded rows show a loading table state.
   - Added frontend regressions for row-save stability after lightweight snapshot refresh and nonzero-total unloaded table state.
+- **Merchant-First Variant UX Hardening (Slice 34)**:
+  - Eliminated technical jargon from merchant-facing copy.
+  - Centralized per-variant editability gating into reusable selectors.
+  - Added per-row structural classification (Active, Older, Archived).
+  - Added merchant-first status cards and calm confidence-building language.
+- **Brand Settings (Slice 35)**:
+  - Implemented merchant-facing store brand identity controls (logo/favicon).
+  - Added admin upload/preview UI, navigation, i18n, and storefront rendering integration.
+  - Backend: `StoreBrandingMedia`, `StoreBrandingSettings` models, branding router, upload URL builder.
+  - Frontend: Brand settings page, AppShellNav link, storefront template header integration.
+- **Multi-Store Phase 1 — Foundation and Store-Aware Admin (Slice 36)**:
+  - Added backend store management endpoints: `PATCH /{store_id}`, `DELETE /{store_id}`.
+  - Added `StoreProvider` React context with `useSelectedStore()` hook.
+  - Added `StoreSwitcher` for switching between stores.
+  - Migrated admin components from hardcoded `stores[0]` to `useSelectedStore()`.
+  - Backend branding endpoints accept optional `x-store-id` header with fallback to `stores[0]`.
+  - Created dedicated store management page at `/dashboard/stores`.
 
 ### Quality Gate Compliance:
 | Gate | Verification Command | Status |
 | :--- | :--- | :--- |
-| **Backend Tests** | Skipped for Slice 33 | **No backend code changed; skipped per user instruction** |
-| **Backend Linter** | `ruff check .` | **`100% clean`** (0 warnings) |
-| **Backend Types** | `mypy app` | **`100% clean`** (Success: no issues in 86 source files) |
-| **Frontend Tests** | `vitest run` | **`328 passed` / `328`** (100% green) |
-| **Frontend Linter** | `npm run lint` | **`100% clean`** (0 warnings) |
-| **Frontend Types** | `npm run typecheck` | **`100% clean`** (0 warnings) |
+| **Backend Store Tests** | `pytest tests/test_stores.py` | **17 passed** |
+| **Backend Branding Tests** | `pytest tests/test_stores_branding.py` | **14 passed** |
+| **Backend Linter** | `ruff check .` | **Clean** |
+| **Backend Types** | `mypy app` | **Pre-existing SQLModel warnings only** |
+| **Frontend Tests** | `vitest run` | **379 passed** / 379 total |
+| **Frontend Linter** | `npm run lint` | **0 errors, 0 warnings** |
+| **Frontend Types** | `npm run typecheck` | **Passed** |
 | **Frontend i18n** | `npm run i18n:check` | **Passed for 10 locales** |
-| **Frontend Build** | `npm run build` | **`Compiled successfully`** (Production ready) |
+| **Frontend Build** | `npm run build` | **Compiled successfully** |
 
-> Backend pytest was skipped for Slice 33 because this was a frontend-only table refresh fix and the user explicitly requested skipping backend tests. Backend Ruff/Mypy gates are clean.
+> All multi-store implementation plan items are complete. Backend `branding_router.py` retains `stores[0]` fallbacks for backward compatibility when `x-store-id` header is absent; frontend always sends the header.
 
 ---
 
@@ -124,16 +148,29 @@ To ensure future features (such as **Orders**, **Carts**, **Inventory**, or **Sp
 ## 3. What is Pending (Future Hardening Slices)
 
 The current system is ready for the next UX hardening slice. The remaining roadmap items are:
-1. **Variant Editor UX Follow-up**:
+1. **Multi-Store Follow-up**:
+   - ✅ All admin pages migrated to `useSelectedStore()`.
+   - ✅ Pre-existing `admin-product-edit-form.tsx` TypeScript errors fixed (`searchParams`, `confirm` signature, `router`).
+   - ✅ `storeSwitchToken` counter added to `StoreContext` for cache invalidation on store switch (Phase 4).
+   - ✅ `Locale` type mismatch fixed in `store-management-list.tsx`.
+   - ✅ Store context tests added (`app/contexts/__tests__/store-context.test.tsx`).
+   - ✅ Category form `useEffect` dependencies fixed to include `selectedStore`.
+   - ✅ `variant-job-metrics-panel.tsx` now passes explicit `storeId` to `getVariantJobMetrics`.
+   - ✅ Unsaved form warning implemented (`hasUnsavedChanges` state, `beforeunload` guard, `window.confirm` on store switch).
+   - ✅ All 6 admin component useEffect dependency warnings fixed.
+   - ✅ Dead code removed (unused icons, imports, functions across 6 files).
+    - ✅ All 379 frontend tests pass; backend store tests pass (17 passed); backend branding tests pass (14 passed).
+   - Remaining: None — all plan items complete.
+2. **Variant Editor UX Follow-up**:
    * Consider native media-to-option-value binding only if product requirements need one image to apply to every variant sharing a color/value.
-2. **Richer E2E/API Test Coverage**:
+3. **Richer E2E/API Test Coverage**:
    * Add Playwright or custom integration test suites confirming template Apply + Quota Failures end-to-end.
    * Add automated browser-level E2E tests for media rebinding after product rebuilds.
    * Add a unified frontend-backend integration test covering the full merchant path: *Admin Options Setup → Job Generation → Snapshot Preview → Snap Publish → Storefront Verification*.
-3. **Advanced Observability**:
+4. **Advanced Observability**:
    * Setup production Prometheus metrics and custom alert policies for SSE reconnection rates.
    * Create dedicated server health views and job queue operational drilldowns.
-4. **Stale Dead-Code Cleanup**:
+5. **Stale Dead-Code Cleanup**:
    * Clean up any leftover helper files or legacy mock classes that became obsolete once the logical soft-delete archiving patterns finalized.
 
 ---

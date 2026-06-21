@@ -536,3 +536,20 @@ After audit, document all findings. Any new hits must be added to Phase 1 migrat
 - Per-store user roles and permissions beyond ownership
 - Multi-store analytics aggregation
 - Store-level checkout settings (future)
+
+
+## 14. IMP
+
+The code must be well-maintained, reusable, organized, and structured to a production-level standard. We already have an existing architecture and workflow—please adhere to them and maintain consistency across the system.
+
+
+Also, since the system supports multiple languages, ensure proper internationalization is followed throughout.
+
+
+In addition:
+
+
+Add comprehensive test cases at all levels (both frontend and backend).
+Remove any unused or dead code.
+Ensure the codebase is clean and maintainable.
+Make sure everything passes: build, tests, type checks, and linting for both frontend and backend.
