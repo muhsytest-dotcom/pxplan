@@ -272,45 +272,45 @@ For public storefront:
 
 | File | Change |
 |---|---|
-| `branding_router.py` | Replace `stores[0]` with store resolved from `x-store-id` header (only exception to URL-pattern rule; see note below) |
+| `branding_router.py` | Migrated from header-based `x-store-id` to path-based `{store_id}` to match other admin routes |
 | `stores/router.py` | None required (already returns all stores for user) |
 
 **Note on `branding_router.py`:**
-The branding router uses a flat prefix (`/catalog/admin/branding`) without a `{store_id}` path param. The minimal-change fix is to have the frontend send `x-store-id: <uuid>` on these calls, and add a small helper to extract/validate it. This avoids restructuring the branding URL hierarchy.
+The branding router now uses the standard `/catalog/admin/stores/{store_id}/branding` path pattern, consistent with all other admin modules. The `x-store-id` header and custom CORS allow-list entry have been removed.
 
 **Branding Subsection (Detailed)**
 
-Unlike all other admin modules, branding cannot use the `/admin/stores/{store_id}/...` path pattern because its endpoints are structured as:
+All branding endpoints now follow the standard admin path pattern:
 
 ```
-GET    /catalog/admin/branding
-PATCH  /catalog/admin/branding
-POST   /catalog/admin/branding/media/upload-url
-POST   /catalog/admin/branding/media
-GET    /catalog/admin/branding/media
+GET    /catalog/admin/stores/{store_id}/branding
+PATCH  /catalog/admin/stores/{store_id}/branding
+POST   /catalog/admin/stores/{store_id}/branding/media/upload-url
+POST   /catalog/admin/stores/{store_id}/branding/media
+GET    /catalog/admin/stores/{store_id}/branding/media
 ```
 
 **Frontend change — `PX-F/lib/stores/api.ts`:**
 
-All 5 branding functions (`getBranding`, `saveBranding`, `createBrandMediaUploadUrl`, `createBrandMedia`, `listBrandMedia`) must include the `x-store-id` header. The `request()` helper in this project already supports credential mode; confirm it allows custom headers and add `x-store-id: selectedStore.id` to each call.
+All 5 branding functions now require `storeId` as a path parameter. The `x-store-id` header has been removed.
 
 **Backend change — `PX-B/app/modules/stores/branding_router.py`:**
 
-1. Add a FastAPI dependency (or simple header read) that extracts `x-store-id` from the request
-2. Validate that the store belongs to the current user (compare against `list_stores_by_owner`)
-3. Pass the resolved `Store` into each endpoint instead of calling `_resolve_store_from_admin()`
-4. Remove or deprecate `_resolve_store_from_admin()` — it is no longer needed
+1. Changed router prefix to `/catalog/admin/stores/{store_id}/branding`
+2. Each endpoint accepts `store_id: UUID` as a path parameter
+3. Store ownership is validated inline using `get_store_by_id()` + `owner_user_id` check (same pattern as `catalog_router.py`)
+4. Removed `_resolve_store_from_header()` helper and `Request` parameter dependency
 
 **Endpoints affected by branding backend change:**
-- `GET /catalog/admin/branding` → `get_branding`
-- `PATCH /catalog/admin/branding` → `update_branding`
-- `POST /catalog/admin/branding/media/upload-url` → `create_brand_media_upload_url`
-- `POST /catalog/admin/branding/media` → `create_brand_media`
-- `GET /catalog/admin/branding/media` → `list_brand_media`
+- `GET /catalog/admin/stores/{store_id}/branding` → `get_branding`
+- `PATCH /catalog/admin/stores/{store_id}/branding` → `update_branding`
+- `POST /catalog/admin/stores/{store_id}/branding/media/upload-url` → `create_brand_media_upload_url`
+- `POST /catalog/admin/stores/{store_id}/branding/media` → `create_brand_media`
+- `GET /catalog/admin/stores/{store_id}/branding/media` → `list_brand_media`
 
 **Branding tests to update:**
-- `PX-F/lib/stores/__tests__/api.test.ts` — assert `x-store-id` header sent
-- Backend tests for `branding_router.py` — mock header and assert correct store is used
+- `PX-F/lib/stores/__tests__/api.test.ts` — assert path-based URLs and no `x-store-id` header
+- Backend tests for `branding_router.py` — assert path-based store ownership and 404 on unauthorized access
 
 ---
 
@@ -388,7 +388,7 @@ For now: **no store limits**. The account holds unlimited stores.
 
 ### Backend Changes
 
-1. **`branding_router.py`** — Replace `_resolve_store_from_admin()` `stores[0]` with a FastAPI dependency that reads `x-store-id` header directly from the request, validates it belongs to the current user, and returns the Store. No global middleware required.
+1. **`branding_router.py`** — Migrated from header-based `x-store-id` to path-based `{store_id}` parameter, matching the pattern used by `catalog_router.py`. Store ownership is validated inline with `get_store_by_id()` + `owner_user_id` check.
 2. **`stores/router.py`** — None required (already returns all stores for user)
 
 ### Frontend Changes
@@ -493,7 +493,7 @@ After audit, document all findings. Any new hits must be added to Phase 1 migrat
     - No stores remain → redirect to create-store
 
 ### Phase 3 — Backend & Risk Fixes
-6. **Branding router fix** — Remove `stores[0]` assumption; accept `x-store-id` header
+6. **Branding router fix** — Migrated to path-based `{store_id}`; removed `stores[0]` fallback and `x-store-id` header
 7. **API Audit** — Search for all endpoints with implicit no-storeId defaults (e.g. `getVariantJobMetrics`)
 8. **VariantJobMetricsPanel** — Make `storeId` required, pass `selectedStore.id`
 

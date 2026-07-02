@@ -95,23 +95,23 @@ The core product variant synchronization engine, background processing pipeline,
   - Added `StoreProvider` React context with `useSelectedStore()` hook.
   - Added `StoreSwitcher` for switching between stores.
   - Migrated admin components from hardcoded `stores[0]` to `useSelectedStore()`.
-  - Backend branding endpoints accept optional `x-store-id` header with fallback to `stores[0]`.
+  - Migrated `branding_router.py` to path-based `/{store_id}/branding`; removed `stores[0]` fallback and `x-store-id` header.
   - Created dedicated store management page at `/dashboard/stores`.
 
 ### Quality Gate Compliance:
 | Gate | Verification Command | Status |
 | :--- | :--- | :--- |
 | **Backend Store Tests** | `pytest tests/test_stores.py` | **17 passed** |
-| **Backend Branding Tests** | `pytest tests/test_stores_branding.py` | **14 passed** |
+| **Backend Branding Tests** | `pytest tests/test_stores_branding.py` | **15 passed** |
 | **Backend Linter** | `ruff check .` | **Clean** |
 | **Backend Types** | `mypy app` | **Pre-existing SQLModel warnings only** |
-| **Frontend Tests** | `vitest run` | **379 passed** / 379 total |
+| **Frontend Tests** | `vitest run` | **385 passed** / 385 total |
 | **Frontend Linter** | `npm run lint` | **0 errors, 0 warnings** |
 | **Frontend Types** | `npm run typecheck` | **Passed** |
 | **Frontend i18n** | `npm run i18n:check` | **Passed for 10 locales** |
 | **Frontend Build** | `npm run build` | **Compiled successfully** |
 
-> All multi-store implementation plan items are complete. Backend `branding_router.py` retains `stores[0]` fallbacks for backward compatibility when `x-store-id` header is absent; frontend always sends the header.
+> All multi-store implementation plan items are complete. Backend `branding_router.py` uses path-based `/{store_id}/branding`; frontend passes `storeId` in the URL and forwards `storage_key`/`public_url` from the upload response to `createBrandMedia`.
 
 ---
 

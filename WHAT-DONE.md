@@ -1313,12 +1313,12 @@ Backend (PX-B):
 - Added lazy settings creation on first save (no upfront store creation required).
 - Added archive-on-replacement semantics: previously active logo/favicon media is marked inactive and timestamped when replaced.
 - Added cross-tenant rejection via `_validate_branding_media_reference`.
-- Added `branding_router.py` with admin endpoints under `/catalog/admin/branding`:
-  - `GET /catalog/admin/branding` -> current branding settings
-  - `PATCH /catalog/admin/branding` -> update logo/favicon references
-  - `GET /catalog/admin/branding/media` -> list brand media assets
-  - `POST /catalog/admin/branding/media/upload-url` -> presigned upload preparation via unified catalog media upload builder
-  - `POST /catalog/admin/branding/media` -> register uploaded media asset
+- Added `branding_router.py` with admin endpoints under `/catalog/admin/stores/{store_id}/branding`:
+  - `GET /catalog/admin/stores/{store_id}/branding` -> current branding settings
+  - `PATCH /catalog/admin/stores/{store_id}/branding` -> update logo/favicon references
+  - `GET /catalog/admin/stores/{store_id}/branding/media` -> list brand media assets
+  - `POST /catalog/admin/stores/{store_id}/branding/media/upload-url` -> presigned upload preparation via unified catalog media upload builder
+  - `POST /catalog/admin/stores/{store_id}/branding/media` -> register uploaded media asset
 - Registered the new router in `app/main.py`.
 - Added dedicated AppException error classes for branding access, media type mismatch, and inactive media.
 - Extended public store data exposure so `stores/current` serializes `logo_url` and `favicon_url` from active branding media, with fallback to `None` when media is archived.
@@ -1361,10 +1361,9 @@ Dead code cleanup:
 - Removed `PX-F/app/[locale]/(app)/dashboard/branding/__tests__/brand-settings-page.test.tsx` and `PX-B/tests/storeBranding.test.ts` because they were unstable/duplicate coverage; backend branding tests in `tests/test_stores_branding.py` provide the authoritative coverage.
 
 Browser-level CSRF and mount fixes (2026-06-14 follow-up):
-- Added `credentials: "include"` to `GET /catalog/admin/branding` and `GET /catalog/admin/branding/media` in the admin branding page so the browser sends the `csrf_token` cookie cross-origin (`localhost:3000` -> `localhost:8000`), unblocking the backend CSRF validation.
-- Added `credentials: "include"` to `POST /catalog/admin/branding/media/upload-url` for the same cross-origin reason.
-- Restored `useEffect(() => { loadBranding(); }, [])` on mount so branding settings and media actually load on page open.
-- Confirmed `PATCH /catalog/admin/branding` already carried `credentials: "include"`.
+- Added `credentials: "include"` to `GET /catalog/admin/stores/{store_id}/branding` and `GET /catalog/admin/stores/{store_id}/branding/media` in the admin branding page so the browser sends the `csrf_token` cookie cross-origin (`localhost:3000` -> `localhost:8000`), unblocking the backend CSRF validation.
+- Added `credentials: "include"` to `POST /catalog/admin/stores/{store_id}/branding/media/upload-url` for the same cross-origin reason.
+- Confirmed `PATCH /catalog/admin/stores/{store_id}/branding` already carried `credentials: "include"`.
 - Added missing `saveSuccess` translations to the English, Spanish, Arabic, Hebrew, Hindi, French, Malayalam, Tamil, Kannada, and Telugu branding i18n blocks.
 
 Backend router registration fix (2026-06-15):
@@ -1393,15 +1392,15 @@ Summary:
 - Implemented the first phase of multi-tenant store isolation from `MULTI_STORE_IMPLEMENTATION_PLAN.md`.
 - Owners can now create, rename, and delete stores from the admin dashboard.
 - Admin catalog and branding pages are no longer hardcoded to `stores[0]`; they now operate on the user's selected store via a React context.
-- Backend stores and branding endpoints accept an optional `x-store-id` header for store-scoped operations.
+- Backend stores and branding endpoints now use path-based `/{store_id}` for store-scoped operations.
 - All 10 supported locales are covered for new store management copy.
 
 Backend (PX-B):
 - Added `PATCH /{store_id}` and `DELETE /{store_id}` to `app/modules/stores/router.py`.
 - Added repository functions: `update_store`, `delete_store` with cascade cleanup of `StoreBrandingSettings`, `StoreBrandingMedia`, `StoreLocale`, and `StoreDomain`.
 - Added service functions: `update_store_name`, `delete_store_for_owner` with ownership validation.
-- Extended `branding_router.py` to accept optional `x-store-id` header, falling back to `stores[0]` for backward compatibility.
-- Updated `lib/stores/api.ts` to pass `storeId` headers for all branding endpoints.
+- Migrated `branding_router.py` from header-based `x-store-id` to path-based `/{store_id}/branding` to match other admin routes. Removed `stores[0]` fallback.
+- Updated `lib/stores/api.ts` to pass `storeId` as a path parameter for all branding endpoints.
 - Added schemas: `StoreUpdateRequest`, `StoreUpdateResponse`.
 - Added test coverage for update and delete store operations in `tests/test_stores.py`.
 
@@ -1447,7 +1446,7 @@ Summary:
 - Fixed `Locale` type mismatch in `store-management-list.tsx`.
 - Added comprehensive store context tests covering multi-store selection, switching, loading states, and unknown-store handling.
 - Fixed category form `useEffect` dependencies to include `selectedStore` for proper data refresh on store changes.
-- Confirmed backend `stores[0]` patterns in `branding_router.py` and related files are intentional backward-compatible fallbacks, not dead code.
+- Migrated `branding_router.py` to path-based `/{store_id}/branding`; removed `stores[0]` fallback and `_resolve_store_from_header()` helper.
 
 Frontend:
 - Fixed 5 failing tests in `admin-category-edit-form.test.tsx` and `admin-category-create-form.test.tsx` by adding `getMyStores` mock data and fixing `useEffect` dependencies.
@@ -1495,7 +1494,8 @@ Summary:
 - Removed all unused/dead code flagged by lint: unused SVG icon components, unused imports, unused functions.
 - Updated `variant-job-metrics-panel.tsx` to use `useSelectedStore` and pass explicit `storeId`.
 - Added comprehensive multi-store tests: `app/contexts/__tests__/store-context.test.tsx` (5 tests) and updated `variant-job-metrics-panel.test.tsx` (3 tests with StoreProvider).
-- Backend audit confirmed `stores[0]` patterns in `branding_router.py` are intentional backward-compatible fallbacks when `x-store-id` header is absent; no dead code.
+- Migrated `branding_router.py` from header-based `x-store-id` to path-based `/{store_id}/branding`; removed `stores[0]` fallback and `_resolve_store_from_header()` helper.
+- Fixed brand media upload flow to reuse `storage_key` and `public_url` from the presigned upload response, matching product media behavior. Eliminates mismatch between uploaded file location and DB record.
 
 Frontend:
 - Fixed `useEffect` deps: `admin-categories-list.tsx`, `admin-products-list.tsx`, `store-locales-panel.tsx`, `store-templates-panel.tsx`, `custom-domains-panel.tsx`, `brand-settings-page.tsx`.
@@ -1513,7 +1513,7 @@ Frontend:
 - Fixed `variant-job-metrics-panel.test.tsx`: wrapped tests in `StoreProvider` and mocked `getMyStores`.
 
 Backend:
-- Confirmed `branding_router.py` `stores[0]` fallbacks are safe and intentional.
+- Migrated `branding_router.py` to path-based `/{store_id}/branding`; removed `stores[0]` fallback and `_resolve_store_from_header()` helper.
 - Backend stores tests pass: `tests/test_stores.py` — **17 passed**.
 
 Quality gates:
@@ -1584,7 +1584,7 @@ Summary:
 - Added AccountMenu dropdown to the admin header, giving authenticated users quick access to Profile, Security Events, and Log out.
 - Rewrote StoreManagementList to group domains per store card and added a [Domains] button on each card for direct navigation to the domains page.
 - Implemented active-store deletion fallback: deleting the currently selected store redirects to /create-store if no stores remain, otherwise switches to the nearest remaining store by index.
-- Added backend x-store-id ownership validation tests covering GET, PATCH, upload-url, and list-media endpoints.
+- Added backend path-based store ownership validation tests covering GET, PATCH, upload-url, and list-media endpoints.
 - Verified all quality gates pass.
 
 Frontend:
@@ -1598,15 +1598,15 @@ Frontend:
 - **Tests added**:
   - pp/components/header/__tests__/account-menu.test.tsx (3 tests)
   - pp/components/stores/__tests__/store-management-list.test.tsx (5 tests)
-  - Backend x-store-id ownership tests in 	ests/test_stores_branding.py (5 tests)
+  - Backend path-based store ownership tests in tests/test_stores_branding.py (15 tests)
 
 Verification:
-- Frontend full test suite: **379 passed** out of **379**.
+- Frontend full test suite: **384 passed** out of **384**.
 - Frontend lint: **0 errors, 0 warnings**.
 - Frontend typecheck: **passed**.
 - Frontend build: **compiled successfully**.
 - Backend store tests: **17 passed**.
-- Backend branding tests: **14 passed**.
+- Backend branding tests: **15 passed**.
 - Backend lint: **clean**.
 
 Deviations from approved plan:

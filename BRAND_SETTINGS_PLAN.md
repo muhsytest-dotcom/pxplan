@@ -131,13 +131,13 @@ Do not store raw image bytes. `store_branding_media` mirrors the storage and ser
 
 ### API
 
-Backend is the source of truth. The store is resolved from the authenticated admin context; **do not** expose `store_id` in the URL for admin branding routes.
+Backend is the source of truth. The store is identified by the `{store_id}` path parameter, consistent with all other admin endpoints.
 
-Add admin endpoints under the authenticated store scope:
+Add admin endpoints under the standard store-scoped path:
 
-- `GET /catalog/admin/branding` — returns `store_branding_settings` record
-- `PATCH /catalog/admin/branding` — updates `logo_media_id` / `favicon_media_id`
-- `POST /catalog/admin/branding/media/upload-url` — generates upload URL for brand media (analogous to the existing product media upload endpoint)
+- `GET /catalog/admin/stores/{store_id}/branding` — returns `store_branding_settings` record
+- `PATCH /catalog/admin/stores/{store_id}/branding` — updates `logo_media_id` / `favicon_media_id`
+- `POST /catalog/admin/stores/{store_id}/branding/media/upload-url` — generates upload URL for brand media (analogous to the existing product media upload endpoint)
 
 Request/response should include only identifiers and metadata (not media blobs). Media reads should use the existing media serving path.
 
@@ -162,11 +162,11 @@ Request/response should include only identifiers and metadata (not media blobs).
 
 **Upload flow:**
 
-1. Client calls `POST /catalog/admin/branding/media/upload-url` with `filename`, `mime_type`, `media_type` (e.g. `"logo"` or `"favicon"`). The store is resolved from the authenticated admin context — **no `store_id` in the request body or URL**.
-2. Backend resolves the merchant's store and generates a `storage_key` under `stores/{store_id}/branding/{media_type}/{random_suffix}-{slugified_filename}` and returns a signed upload URL.
+1. Client calls `POST /catalog/admin/stores/{store_id}/branding/media/upload-url` with `filename`, `mime_type`, `media_type` (e.g. `"logo"` or `"favicon"`). The `{store_id}` path parameter identifies the target store.
+2. Backend validates store ownership and returns `storage_key`, `public_url`, and a signed `upload_url`.
 3. Client PUTs bytes to the upload URL.
-4. Backend creates a `store_branding_media` row scoped to the resolved store.
-5. Client calls `PATCH /catalog/admin/branding` with the new `media_id`.
+4. Client calls `POST /catalog/admin/stores/{store_id}/branding/media` with the same `filename`, `mime_type`, `media_type`, plus the `storage_key` and `public_url` from step 2. Backend creates the `store_branding_media` row using those values.
+5. Client calls `PATCH /catalog/admin/stores/{store_id}/branding` with the new `media_id`.
 
 This is structurally parallel to the existing product media upload flow but routes through a dedicated branding path to keep the namespaces separate.
 
@@ -216,7 +216,7 @@ This is structurally parallel to the existing product media upload flow but rout
 
 - `app/modules/stores/models.py` — new `StoreBrandingSettings` and `StoreBrandingMedia` models
 - `app/modules/stores/schemas.py` — branding request/response schemas
-- `app/modules/stores/router.py` — `GET /catalog/admin/branding`, `PATCH /catalog/admin/branding`, `POST /catalog/admin/branding/media/upload-url`
+- `app/modules/stores/branding_router.py` — `GET /catalog/admin/stores/{store_id}/branding`, `PATCH /catalog/admin/stores/{store_id}/branding`, `POST /catalog/admin/stores/{store_id}/branding/media/upload-url`
 - `app/modules/catalog/service.py` — extend or mirror the existing `build_media_upload_url()` for brand media storage key generation (`stores/{store_id}/branding/...`)
 - Alembic migration for `store_branding_settings` and `store_branding_media` tables
 - `app/modules/stores/service.py` — store branding business logic (ownership checks, fallback logic)
@@ -231,7 +231,7 @@ This is structurally parallel to the existing product media upload flow but rout
 - `lib/i18n/ui-copy.ts` and locale dictionaries for new copy
 - Tests in `app/components/.../__tests__/` and `lib/stores/__tests__/`
 
-Note: The existing `productMedia` API, types, and components are **not** modified. Brand media uses its own API surface (`/catalog/admin/branding/...`) and own React data structures.
+Note: The existing `productMedia` API, types, and components are **not** modified. Brand media uses its own API surface (`/catalog/admin/stores/{store_id}/branding/...`) and own React data structures.
 
 ## Migration Plan
 
@@ -256,7 +256,7 @@ All of these fit naturally into `store_branding_media` without touching `product
 ## Risks & Considerations
 
 - Media FK safety: ensure cleanup respects archive rules.
-- Cache invalidation: a successful branding update **must** trigger storefront cache invalidation. Branding changes should be visible on the storefront immediately or within the platform's normal cache refresh window. The backend is responsible for issuing the invalidation signal after `PATCH /catalog/admin/branding` commits.
+- Cache invalidation: a successful branding update **must** trigger storefront cache invalidation. Branding changes should be visible on the storefront immediately or within the platform's normal cache refresh window. The backend is responsible for issuing the invalidation signal after `PATCH /catalog/admin/stores/{store_id}/branding` commits.
 - i18n coverage for all supported locales via the existing `npm run i18n:check` gate.
 - Keep admin vs storefront separation clear to avoid tenant expectations that the admin panel can be rebranded.
 
